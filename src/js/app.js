@@ -1,10 +1,10 @@
+// Clay configuration
+var Clay = require('pebble-clay');
+var clayConfig = require('./config');
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+
 // App Info
 var version = "3.6";
-var api_version = "5";
-var settings_version = "3";
-
-// Default Server
-var server = '';
 
 // Global Settings Variables
 var favoriteTeam = 19;
@@ -26,11 +26,19 @@ var backgroundColor = "AA0000";
 // Global Variables
 var offset = 0;
 var teams = ["", "LAA", "HOU", "OAK", "TOR", "ATL", "MIL", "STL", "CHC", "ARI", "LAD", "SF", "CLE", "SEA", "MIA", "NYM", "WSH", "BAL", "SD", "PHI", "PIT", "TEX", "TB", "BOS", "CIN", "COL", "KC", "DET", "MIN", "CWS", "NYY", "NL", "AL"];
+// Official MLB Stats API team IDs, parallel to teams[]
+var teamIds = [0, 108, 117, 133, 141, 144, 158, 138, 112, 109, 119, 137, 114, 136, 146, 121, 120, 110, 135, 143, 134, 140, 139, 111, 113, 115, 118, 116, 142, 145, 147, 0, 0];
 var retry = 0;
 var all_star_game = 0;
 var reload_timeout = 0;
 
-// Function to get the timezone offset
+// MLB Stats API uses different abbreviations for some teams; normalize to match teams[]
+var abbrevNorm = { 'SFG': 'SF', 'WSN': 'WSH', 'SDP': 'SD', 'TBR': 'TB', 'KCR': 'KC', 'ANA': 'LAA' };
+function normalizeAbbrev(abbrev) {
+  return abbrevNorm[abbrev] || abbrev;
+}
+
+// Function to get the timezone offset (hours to add to local time to get Eastern Time)
 function getTimezoneOffsetHours(){
   var offsetHours = new Date().getTimezoneOffset() / 60;
   offsetHours = offsetHours - 4;
@@ -51,7 +59,78 @@ function sendDataToWatch(data){
 	Pebble.sendAppMessage(data);
 }
 
-// Function to build the dictionary of relavant data for the AppMessage
+// Convert an ISO 8601 UTC game time to local 12-hour "H:MM" format (no leading zero)
+function formatGameTime(isoString) {
+  var d = new Date(isoString);
+  var hours = d.getHours();
+  var minutes = ('0' + d.getMinutes()).slice(-2);
+  if (hours === 0) { hours = 12; }
+  else if (hours > 12) { hours -= 12; }
+  return hours + ':' + minutes;
+}
+
+// Map MLB Stats API detailedState values to the status strings compileDataForWatch() expects
+function mapGameStatus(detailedState) {
+  if (detailedState === 'Scheduled') { return 'Preview'; }
+  if (detailedState === 'Game Over' || detailedState === 'Completed Early') { return 'Final'; }
+  // Delayed/suspended games were already in progress; keep them as such
+  if (detailedState === 'Delay' || detailedState.indexOf('Delayed') === 0 || detailedState === 'Suspended') { return 'In Progress'; }
+  return detailedState;
+}
+
+// Extract the first matching TV and radio broadcast names for a given side ('home' or 'away')
+function getBroadcasts(broadcasts, side) {
+  var tv = '', radio = '';
+  if (!broadcasts || !broadcasts.length) { return { tv: tv, radio: radio }; }
+  for (var i = 0; i < broadcasts.length; i++) {
+    var b = broadcasts[i];
+    // Accept a side-specific broadcast, or a national broadcast as a TV fallback
+    var relevant = (b.homeAway === side) || (b.homeAway === 'national' && tv === '');
+    if (!relevant) { continue; }
+    if (b.type === 'TV' && tv === '') {
+      tv = b.name || '';
+    } else if ((b.type === 'AM' || b.type === 'FM' || b.type === 'Radio') && radio === '') {
+      radio = b.name || '';
+    }
+  }
+  return { tv: tv, radio: radio };
+}
+
+// Transform a single MLB Stats API game object into the shape compileDataForWatch() expects
+function transformMLBGame(game) {
+  var linescore       = game.linescore || {};
+  var offense         = linescore.offense || {};
+  var linescoreTeams  = linescore.teams  || {};
+  var homeLS          = linescoreTeams.home || {};
+  var awayLS          = linescoreTeams.away || {};
+  var homeBroadcasts  = getBroadcasts(game.broadcasts, 'home');
+  var awayBroadcasts  = getBroadcasts(game.broadcasts, 'away');
+
+  return {
+    game_status:          mapGameStatus(game.status.detailedState),
+    home_team:            normalizeAbbrev(game.teams.home.team.abbreviation),
+    away_team:            normalizeAbbrev(game.teams.away.team.abbreviation),
+    home_pitcher:         (game.teams.home.probablePitcher && game.teams.home.probablePitcher.lastName) || '',
+    away_pitcher:         (game.teams.away.probablePitcher && game.teams.away.probablePitcher.lastName) || '',
+    game_time:            formatGameTime(game.gameDate),
+    home_tv_broadcast:    homeBroadcasts.tv,
+    home_radio_broadcast: homeBroadcasts.radio,
+    away_tv_broadcast:    awayBroadcasts.tv,
+    away_radio_broadcast: awayBroadcasts.radio,
+    runners_on_base:      (offense.first  ? 1 : 0) + ':' +
+                          (offense.second ? 1 : 0) + ':' +
+                          (offense.third  ? 1 : 0),
+    home_score: homeLS.runs !== undefined ? homeLS.runs : (game.teams.home.score || 0),
+    away_score: awayLS.runs !== undefined ? awayLS.runs : (game.teams.away.score || 0),
+    inning:     linescore.currentInning || 0,
+    inning_half: linescore.inningHalf  || '',
+    balls:      linescore.balls   !== undefined ? linescore.balls   : 0,
+    strikes:    linescore.strikes !== undefined ? linescore.strikes : 0,
+    outs:       linescore.outs    !== undefined ? linescore.outs    : 0
+  };
+}
+
+// Function to build the dictionary of relevant data for the AppMessage
 function compileDataForWatch(raw_data, game){
   // Determine how much the data has changed
   // Prepare the dictionary depending on game status
@@ -60,14 +139,14 @@ function compileDataForWatch(raw_data, game){
   var data = raw_data.game_data[game];
   var game_status = data.game_status;
   var dictionary = {'TYPE':1};
-  
+
   if (game_status == 'Preview' || game_status == 'Warmup' || game_status == 'Pre-Game' || game_status == 'Postponed' || game_status == 'Cancelled'){
-    
+
     dictionary.NUM_GAMES = 1;
     if (game_status == 'Preview'){
       dictionary.STATUS = 0;
     } else {
-      dictionary.STATUS = 1; 
+      dictionary.STATUS = 1;
     }
     dictionary.HOME_TEAM = data.home_team;
     dictionary.AWAY_TEAM = data.away_team;
@@ -88,9 +167,9 @@ function compileDataForWatch(raw_data, game){
       dictionary.AWAY_BROADCAST = data.away_tv_broadcast;
     }
     sendDataToWatch(dictionary);
-    
+
   } else if (game_status == 'In Progress'){
-    
+
     dictionary.NUM_GAMES = 1;
     dictionary.STATUS = 2;
     dictionary.HOME_TEAM = data.home_team;
@@ -106,9 +185,9 @@ function compileDataForWatch(raw_data, game){
     dictionary.STRIKES = parseInt(data.strikes);
     dictionary.OUTS = parseInt(data.outs);
     sendDataToWatch(dictionary);
-    
+
   } else {
-    
+
     dictionary.NUM_GAMES = 1;
     dictionary.STATUS = 3;
     dictionary.HOME_TEAM = data.home_team;
@@ -117,7 +196,7 @@ function compileDataForWatch(raw_data, game){
     dictionary.AWAY_SCORE = parseScore(data.away_score);
     dictionary.INNING = parseInt(data.inning);
     sendDataToWatch(dictionary);
-    
+
   }
 }
 
@@ -152,12 +231,12 @@ function within_30_minutes(game_time){
 function chooseGame(data){
   // Initial variable set
   var game = 0;
-  
+
   // Get game information
   var game_1_status = data.game_data[0].game_status;
   var game_2_status = data.game_data[1].game_status;
   var game_2_time = data.game_data[1].game_time;
-  
+
   // Determine which game to use
   if (game_1_status == 'Preview' || game_1_status == 'Warmnp' || game_1_status == 'In Progress' || game_1_status == 'Pre-Game'){
     // If first game has not started yet or is in progress, use first game
@@ -175,43 +254,20 @@ function chooseGame(data){
     // Fallback
     game = 1;
   }
-  
+
   // Catch, if offset is -1 then show second game
   if (game_2_status == 'Final'){
     // Game 2 final fallback
     game = 1;
   }
-  
-  return game;
-}
 
-// Function to correct game time based on timezone
-function correctTimezone(data){
-  if(data.number_of_games > 0){
-    var game_number = 0;
-    if(data.number_of_games > 1){
-      game_number = chooseGame(data);
-    }
-    var game_time = data.game_data[game_number].game_time;
-    var game_hours = game_time.split(":")[0];
-    var new_game_hours = parseInt(game_hours) - getTimezoneOffsetHours();
-    if (new_game_hours > 12){
-      new_game_hours = new_game_hours - 12;
-    } else if (new_game_hours < 1){
-      new_game_hours = new_game_hours + 12;
-    }
-    data.game_data[game_number].game_time = new_game_hours + ":" + game_time.split(":")[1];
-    return data;
-  } else {
-    return data;
-  }
+  return game;
 }
 
 // Function to process the incoming data
 function processGameData(gameData){
-  // Route incoming data by number of games
-  var data = correctTimezone(gameData);
-  var number_of_games = data.number_of_games;
+  // Game times are already in local time from transformMLBGame(); no timezone correction needed
+  var number_of_games = gameData.number_of_games;
   // Route the game data based on number of games
   if (number_of_games === 0) {
     // If no game, only report no game
@@ -222,65 +278,90 @@ function processGameData(gameData){
     sendDataToWatch(dictionary);
   } else if (number_of_games == 1){
     // If one game, determine information to send to watch
-    compileDataForWatch(data, 0);
+    compileDataForWatch(gameData, 0);
   } else{
-    // If multiple games, determine which game is relavent
-    compileDataForWatch(data, chooseGame(data));
+    // If multiple games, determine which game is relevant
+    compileDataForWatch(gameData, chooseGame(gameData));
   }
 }
 
-// Function to get MLB data from personal server
+// Function to get MLB data from the official MLB Stats API (https://statsapi.mlb.com)
+// No API key required. Replaces the private chs.network server.
 function getGameData(offset){
-  var method = 'GET';
-  var watch = Pebble.getActiveWatchInfo ? Pebble.getActiveWatchInfo() : null;
-  var url = 'http://pebble.' + server + '.chs.network/mlb/api-' + api_version + '.php?cst=' + Pebble.getAccountToken() + '&team=' + teams[favoriteTeam] + '&offset=' + offset + '&platform=' + watch.platform + '&version=' + version;
-  // Create the request
+  var teamId = teamIds[favoriteTeam];
+  if (!teamId) {
+    // All-Star teams or invalid index have no Stats API team ID
+    processGameData({ number_of_games: 0, game_data: [] });
+    return;
+  }
+
+  // Build the date string (YYYY-MM-DD) for today or yesterday (offset = -1)
+  var d = new Date();
+  d.setDate(d.getDate() + offset);
+  var date = d.getFullYear() + '-' +
+             ('0' + (d.getMonth() + 1)).slice(-2) + '-' +
+             ('0' + d.getDate()).slice(-2);
+
+  var url = 'https://statsapi.mlb.com/api/v1/schedule' +
+            '?sportId=1' +
+            '&date=' + date +
+            '&teamId=' + teamId +
+            '&hydrate=linescore,broadcasts(all),probablePitcher';
+
   var request = new XMLHttpRequest();
   request.timeout = 5000;
-  
-  // Specify the callback for when the request is completed
+
   request.onload = function() {
-    // The request was successfully completed!
     reload_timeout = 0;
-    var raw_data = JSON.parse(this.responseText);
-    var number_of_games = parseInt(JSON.parse(raw_data.number_of_games));
-    
-    // If all star game, refresh logos
-    if(number_of_games == 1 && (raw_data.game_data[0].home_team == "NL" || raw_data.game_data[0].home_team == "NL")){
-      all_star_game = 1;
-      sendSettings();
+    var raw = JSON.parse(this.responseText);
+    var games = (raw.dates && raw.dates.length > 0) ? raw.dates[0].games : [];
+    var number_of_games = games.length;
+
+    // Check for All-Star game (NL or AL team on either side)
+    if (number_of_games === 1) {
+      var homeAbbrev = normalizeAbbrev(games[0].teams.home.team.abbreviation);
+      var awayAbbrev = normalizeAbbrev(games[0].teams.away.team.abbreviation);
+      if (homeAbbrev === 'NL' || homeAbbrev === 'AL' || awayAbbrev === 'NL' || awayAbbrev === 'AL') {
+        all_star_game = 1;
+        sendSettings();
+      } else {
+        all_star_game = 0;
+      }
     } else {
       all_star_game = 0;
     }
-    
-    if(offset == -1 && number_of_games === 0){
+
+    var transformed = {
+      number_of_games: number_of_games,
+      game_data: games.map(transformMLBGame)
+    };
+
+    if (offset === -1 && number_of_games === 0) {
       offset = 0;
       getGameData(offset);
-    } else if(number_of_games === 0 && retry === 0){
+    } else if (number_of_games === 0 && retry === 0) {
       getGameData(offset);
       retry = 1;
-    } else if(offset == -1 && number_of_games == 1 && (raw_data.game_data[0].game_status == 'Postponed' || raw_data.game_data[0].game_status == 'Cancelled')){
+    } else if (offset === -1 && number_of_games === 1 && (transformed.game_data[0].game_status === 'Postponed' || transformed.game_data[0].game_status === 'Cancelled')) {
       offset = 0;
       getGameData(offset);
-    } else if(offset == -1 && number_of_games == 2 && (raw_data.game_data[1].game_status == 'Postponed' || raw_data.game_data[1].game_status == 'Cancelled')){
+    } else if (offset === -1 && number_of_games === 2 && (transformed.game_data[1].game_status === 'Postponed' || transformed.game_data[1].game_status === 'Cancelled')) {
       offset = 0;
       getGameData(offset);
     } else {
-      processGameData(raw_data);
+      processGameData(transformed);
     }
   };
-  
-  // On timeout, check to see if the server is live
-  request.ontimeout = function (e) {
-    if(reload_timeout < 5){
-      initializeServer();
+
+  // On timeout, retry up to 5 times directly (no server lookup needed)
+  request.ontimeout = function() {
+    if (reload_timeout < 5) {
       reload_timeout++;
+      getGameData(offset);
     }
-    
   };
-  
-  // Send the request
-  request.open(method, url);
+
+  request.open('GET', url);
   request.send();
 }
 
@@ -406,36 +487,17 @@ function storeSettings(configuration){
   newGameDataRequest();
 }
 
-// Fucntion to send initial settings/processes to watch and load data
+// Function to send initial settings/processes to watch and load data
 function initializeData(){
   loadSettings();
   newGameDataRequest();
 }
 
-// Function to get the current server
-function initializeServer(){
-  var url = 'http://lookup.cloud.chs.network/index.php?application=pebble';
-  var method = 'GET';
-  // Create the request
-  var request = new XMLHttpRequest();
-  
-  // Specify the callback for when the request is completed
-  request.onload = function() {
-    // The request was successfully completed!
-    var data = JSON.parse(this.responseText);
-    server = data.server;
-    initializeData();
-  };
-  // Send the request
-  request.open(method, url);
-  request.send();
-}
-
 // Called when JS is ready
 Pebble.addEventListener("ready", function(e) {
-  initializeServer();
+  initializeData();
 });
-												
+
 // Called when incoming message from the Pebble is received
 Pebble.addEventListener("appmessage", function(e) {
   var type = parseInt(e.payload.TYPE);
@@ -446,15 +508,27 @@ Pebble.addEventListener("appmessage", function(e) {
   }
 });
 
-Pebble.addEventListener('webviewclosed', function(e) {
-  // Decode the user's preferences
-  var configuration = JSON.parse(decodeURIComponent(e.response));
-  storeSettings(configuration);
-});
+// Convert a 24-bit color integer (as returned by Clay's color picker) to a
+// 6-character uppercase hex string that GColorFromHEX() / storeSettings() expects.
+function colorIntToHex(value) {
+  var hex = value.toString(16).toUpperCase();
+  while (hex.length < 6) { hex = '0' + hex; }
+  return hex;
+}
 
 Pebble.addEventListener('showConfiguration', function() {
-  loadSettings();
-  var watch = Pebble.getActiveWatchInfo ? Pebble.getActiveWatchInfo() : null;
-  var url = 'http://pebble.phl.chs.network/mlb/config/config-' + settings_version + '.php?favorite-team=' + favoriteTeam + '&refresh-off=' + refreshTime[0] + '&refresh-game=' + refreshTime[1] + '&shake-enabled=' + shakeEnabled + '&shake-time=' + shakeTime + '&bases-display=' + basesDisplay + '&platform=' + watch.platform;
-  Pebble.openURL(url);
+  Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener('webviewclosed', function(e) {
+  if (!e || !e.response) { return; }
+  var settings = clay.getSettings(e.response);
+  // Clay returns color picker values as 24-bit integers; convert to 6-char hex
+  // strings so the existing storeSettings() / C-side GColorFromHEX() code works.
+  ['primary_color', 'secondary_color', 'background_color'].forEach(function(key) {
+    if (typeof settings[key] === 'number') {
+      settings[key] = colorIntToHex(settings[key]);
+    }
+  });
+  storeSettings(settings);
 });

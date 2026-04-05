@@ -5,3 +5,6 @@ pebble-screenshot*
 .*.swp
 
 .idea
+
+_DS_Store
+Thumbs.db

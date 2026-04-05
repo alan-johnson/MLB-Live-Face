@@ -900,6 +900,7 @@ static void window_load(Window *window) {
   // Create the TextLayer with specific bounds
   s_time_layer = text_layer_create(GRect(0, ((bounds.size.h / 10) * 4) - 6, bounds.size.w, 54));
   #ifdef PBL_ROUND
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Round Layout");
     s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 5), ((bounds.size.h / 10) * 6) + 5, 50, 25));
     s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 5), ((bounds.size.h / 10) * 7) + 9, 50, 25));
     s_game_time_layer = sliding_text_layer_create(GRect((bounds.size.w / 5) * 2, ((bounds.size.h / 10) * 8) + 11, 50, 25));
@@ -907,7 +908,17 @@ static void window_load(Window *window) {
     s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 2) + 5, ((bounds.size.h / 10) * 7) + 8, ((bounds.size.w / 5) * 3) - 5, 25));
     s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 3), ((bounds.size.h / 10) * 6) + 15, ((bounds.size.w / 5) * 3) - 5, 45));
     s_loading_layer = sliding_text_layer_create(GRect(0, ((bounds.size.h / 10) * 6) + 15, bounds.size.w, 45));
+  #elif PBL_PLATFORM_EMERY
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Time 2.0 Layout");
+    s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 7) + 2, 50, 25));
+    s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 8) + 10, 50, 25));
+    s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 14, 50, 25));
+    s_away_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 7) + 2, ((bounds.size.w / 5) * 4) - 0, 30));
+    s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 8) + 10, ((bounds.size.w / 5) * 4) - 0, 30));
+    s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 4) * 3), ((bounds.size.h / 10) * 7) + 14, ((bounds.size.w / 5) * 3) - 5, 45));
+    s_loading_layer = sliding_text_layer_create(GRect(0, ((bounds.size.h / 10) * 7) + 14, bounds.size.w, 45));
   #else
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Rectangular Layout");
     s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 7) + 2, 50, 25));
     s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 8) + 10, 50, 25));
     s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 14, 50, 25));
@@ -1018,7 +1029,7 @@ static void update_time() {
     strftime(s_buffer, sizeof("00:00"), "%I:%M", tick_time);
     int n;
     if( ( n = strspn(s_buffer, "0" ) ) != 0 && s_buffer[n] != '\0' ) {
-      snprintf(s_buffer, sizeof(s_buffer), "%s", &s_buffer[n]);
+      memmove(s_buffer, &s_buffer[n], strlen(s_buffer) - n + 1);
     }
     
   }

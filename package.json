@@ -1,6 +1,8 @@
 {
     "author": "Chris Schlitt",
-    "dependencies": {},
+    "dependencies": {
+        "pebble-clay": "^1.0.4"
+    },
     "keywords": [],
     "name": "mlb-live-face",
     "pebble": {
@@ -233,7 +235,9 @@
         "targetPlatforms": [
             "aplite",
             "basalt",
-            "chalk"
+            "chalk",
+            "diorite",
+            "emery"
         ],
         "uuid": "3ae16b33-47d1-4479-8f41-b5face25f3ca",
         "watchapp": {
