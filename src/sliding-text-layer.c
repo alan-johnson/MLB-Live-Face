@@ -236,6 +236,7 @@ static void animate(SlidingTextLayer* layer, uint8_t direction) {
 
   data->direction = direction;
   data->offset = 0;
+  data->is_animating = true;
   data->animation = animation_create();
   animation_set_duration(data->animation, data->duration);
   animation_set_curve(data->animation, data->curve);
@@ -321,6 +322,7 @@ static void animation_stopped(Animation *anim, bool stopped, void *context) {
   data->is_animating = false;
   data->text_current = data->text_next;
   data->text_next = false;
+  layer_mark_dirty(get_layer((SlidingTextLayer*)context));
 #ifdef PBL_SDK_2
   animation_destroy(anim);
 #endif

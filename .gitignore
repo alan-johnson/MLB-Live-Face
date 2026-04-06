@@ -8,3 +8,5 @@ pebble-screenshot*
 
 _DS_Store
 Thumbs.db
+
+*.bak

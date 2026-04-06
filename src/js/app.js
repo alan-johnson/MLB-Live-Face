@@ -38,6 +38,19 @@ function normalizeAbbrev(abbrev) {
   return abbrevNorm[abbrev] || abbrev;
 }
 
+// Reverse map: MLB Stats API team ID → abbreviation, built from teams[] and teamIds[]
+var teamIdToAbbrev = {};
+for (var i = 1; i < teamIds.length; i++) {
+  if (teamIds[i]) { teamIdToAbbrev[teamIds[i]] = teams[i]; }
+}
+
+// Extract last name from a full name string
+function lastName(fullName) {
+  if (!fullName) { return ''; }
+  var parts = fullName.split(' ');
+  return parts[parts.length - 1];
+}
+
 // Function to get the timezone offset (hours to add to local time to get Eastern Time)
 function getTimezoneOffsetHours(){
   var offsetHours = new Date().getTimezoneOffset() / 60;
@@ -108,10 +121,10 @@ function transformMLBGame(game) {
 
   return {
     game_status:          mapGameStatus(game.status.detailedState),
-    home_team:            normalizeAbbrev(game.teams.home.team.abbreviation),
-    away_team:            normalizeAbbrev(game.teams.away.team.abbreviation),
-    home_pitcher:         (game.teams.home.probablePitcher && game.teams.home.probablePitcher.lastName) || '',
-    away_pitcher:         (game.teams.away.probablePitcher && game.teams.away.probablePitcher.lastName) || '',
+    home_team:            normalizeAbbrev(game.teams.home.team.abbreviation || teamIdToAbbrev[game.teams.home.team.id] || ''),
+    away_team:            normalizeAbbrev(game.teams.away.team.abbreviation || teamIdToAbbrev[game.teams.away.team.id] || ''),
+    home_pitcher:         lastName((game.teams.home.probablePitcher && game.teams.home.probablePitcher.fullName) || ''),
+    away_pitcher:         lastName((game.teams.away.probablePitcher && game.teams.away.probablePitcher.fullName) || ''),
     game_time:            formatGameTime(game.gameDate),
     home_tv_broadcast:    homeBroadcasts.tv,
     home_radio_broadcast: homeBroadcasts.radio,
@@ -309,11 +322,32 @@ function getGameData(offset){
             '&hydrate=linescore,broadcasts(all),probablePitcher';
 
   var request = new XMLHttpRequest();
-  request.timeout = 5000;
+  request.timeout = 10000;
 
   request.onload = function() {
+    if (this.status !== 200) {
+      if (reload_timeout < 5) {
+        reload_timeout++;
+        getGameData(offset);
+      } else {
+        processGameData({ number_of_games: 0, game_data: [] });
+      }
+      return;
+    }
+    var raw;
+    try {
+      raw = JSON.parse(this.responseText);
+      console.log("Raw data from MLB Stats API: " + JSON.stringify(raw));
+    } catch(e) {
+      if (reload_timeout < 5) {
+        reload_timeout++;
+        getGameData(offset);
+      } else {
+        processGameData({ number_of_games: 0, game_data: [] });
+      }
+      return;
+    }
     reload_timeout = 0;
-    var raw = JSON.parse(this.responseText);
     var games = (raw.dates && raw.dates.length > 0) ? raw.dates[0].games : [];
     var number_of_games = games.length;
 
@@ -331,9 +365,16 @@ function getGameData(offset){
       all_star_game = 0;
     }
 
+    var game_data;
+    try {
+      game_data = games.map(transformMLBGame);
+    } catch(e) {
+      processGameData({ number_of_games: 0, game_data: [] });
+      return;
+    }
     var transformed = {
       number_of_games: number_of_games,
-      game_data: games.map(transformMLBGame)
+      game_data: game_data
     };
 
     if (offset === -1 && number_of_games === 0) {
@@ -353,11 +394,23 @@ function getGameData(offset){
     }
   };
 
-  // On timeout, retry up to 5 times directly (no server lookup needed)
+  // On network error, retry up to 5 times
+  request.onerror = function() {
+    if (reload_timeout < 5) {
+      reload_timeout++;
+      getGameData(offset);
+    } else {
+      processGameData({ number_of_games: 0, game_data: [] });
+    }
+  };
+
+  // On timeout, retry up to 5 times
   request.ontimeout = function() {
     if (reload_timeout < 5) {
       reload_timeout++;
       getGameData(offset);
+    } else {
+      processGameData({ number_of_games: 0, game_data: [] });
     }
   };
 
@@ -408,7 +461,7 @@ function sendSettings(){
 function loadSettings(){
   favoriteTeam = localStorage.getItem(1);
   if(favoriteTeam === null){
-    favoriteTeam = 19;
+    favoriteTeam = 8;
   }
   shakeEnabled = localStorage.getItem(2);
   if(shakeEnabled === null){

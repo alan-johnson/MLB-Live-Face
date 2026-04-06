@@ -17,7 +17,7 @@ module.exports = [
         "type": "select",
         "messageKey": "favorite_team",
         "label": "Team",
-        "defaultValue": "19",
+        "defaultValue": "8",
         "options": [
           { "label": "Los Angeles Angels",   "value": "1"  },
           { "label": "Houston Astros",        "value": "2"  },

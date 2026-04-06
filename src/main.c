@@ -137,7 +137,7 @@ static GameData previousGameData;
 static Settings userSettings;
 
 static void initialize_settings(){
-  userSettings.favorite_team = 19;
+  userSettings.favorite_team = 8;
   userSettings.shake_enabeled = 1;
   userSettings.shake_time = 5;
   userSettings.bases_display = 1;
@@ -425,6 +425,9 @@ static void change_colors(){
   s_team_logo = gbitmap_create_with_resource(logo[userSettings.favorite_team]);
   bitmap_layer_set_bitmap(s_team_logo_layer, s_team_logo);
   layer_mark_dirty(bitmap_layer_get_layer(s_team_logo_layer));
+  #ifdef PBL_PLATFORM_EMERY
+    bitmap_layer_set_background_color(s_team_logo_layer, userSettings.background_color);
+  #endif
 }
 
 // Function to determine which graphics need to be updated
@@ -432,22 +435,28 @@ static void route_graphic_updates(){
   if ((currentGameData.status != previousGameData.status) || (strcmp(currentGameData.home_team, previousGameData.home_team) != 0) || (strcmp(currentGameData.away_team, previousGameData.away_team) != 0)){
     if (currentGameData.status == 2){
       // Game Started
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to Start Game.");
       startGame();
     } else if (previousGameData.status == 2){
       // Game Ended
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to End Game status = 2.");
       endGame();
     } else if (previousGameData.status == 3){
       // Show a New Game
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to New Game.");
       newGame();
     } else if (currentGameData.status == 3){
       // End the Game
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to End Game, status = 3");
       endGame();
     } else {
       // New Game
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to New Game, default.");
       newGame();
     }
   } else if (currentGameData.status == 0 && previousGameData.status != 0){
     // New Game Fallback
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to New Game, fallback.");
     newGame();
   } else if (currentGameData.status == 2){
     // Declare the dictionary's iterator
@@ -477,6 +486,7 @@ static void route_graphic_updates(){
       instructions[5] = 1;
     }
     // Update graphics based on instructions
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to Update Game. instructions: %d, %d, %d, %d, %d, %d", instructions[0], instructions[1], instructions[2], instructions[3], instructions[4], instructions[5]);
     updateGame(instructions);
   }
 }
@@ -490,12 +500,14 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
     // This value was stored as JS Number, which is stored here as int32_t
     type = (int)type_tuple->value->int32;
   }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Message Received, Type: %d", type);
   if (type == 0){
     Tuple *t = dict_read_first(received);
     while(t != NULL) {
       switch(t->key) {
         case PREF_FAVORITE_TEAM:
           userSettings.favorite_team = (int)t->value->int32;
+          APP_LOG(APP_LOG_LEVEL_DEBUG, "Favorite Team: %d", userSettings.favorite_team);
           break;
         case PREF_SHAKE_ENABELED:
           userSettings.shake_enabeled = (int)t->value->int32;
@@ -553,6 +565,7 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       // This value was stored as JS Number, which is stored here as int32_t
       num_games = (int)type_tuple->value->int32;
     }
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Number of Games: %d", num_games);
     if (num_games == 0){
       // Show No Game Today
       showNoGame();
@@ -560,10 +573,13 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       // Hide the Loading Screen
       if(showing_loading_screen == 1){
         hide_loading_screen();
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Hiding Loading Screen.");
       }
       // Hide the No Game Message
       if(showing_no_game == 1){
         showing_no_game = 0;
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Hiding No Game Message.");
+
       }
       
       // Process the data set
@@ -572,65 +588,86 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       
       Tuple *t = dict_read_first(received);
       while(t != NULL) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Key: %d", (int)t->key);
         switch(t->key) {
           case HOME_TEAM:
             strcpy(currentGameData.home_team,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Home Team: %s", currentGameData.home_team);
             break;
           case AWAY_TEAM:
             strcpy(currentGameData.away_team,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Away Team: %s", currentGameData.away_team);
             break;
           case NUM_GAMES:
             currentGameData.num_games = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Number of Games: %d", currentGameData.num_games);
             break;
           case STATUS:
             currentGameData.status = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Game Status: %d", currentGameData.status);
             break;
           case HOME_PITCHER:
             strcpy(currentGameData.home_pitcher,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Home Pitcher: %s", currentGameData.home_pitcher);
             break;
           case AWAY_PITCHER:
             strcpy(currentGameData.away_pitcher,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Away Pitcher: %s", currentGameData.away_pitcher);
             break;
           case GAME_TIME:
             strcpy(currentGameData.game_time,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Game Time: %s", currentGameData.game_time);
             break;
           case HOME_BROADCAST:
             strcpy(currentGameData.home_broadcast,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Home Broadcast: %s", currentGameData.home_broadcast);
             break;
           case AWAY_BROADCAST:
             strcpy(currentGameData.away_broadcast,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Away Broadcast: %s", currentGameData.away_broadcast);
             break;
           case FIRST:
             currentGameData.first = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, First Base: %d", currentGameData.first);
             break;
           case SECOND:
             currentGameData.second = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Second Base: %d", currentGameData.second);
             break;
           case THIRD:
             currentGameData.third = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Third Base: %d", currentGameData.third);
             break;
           case HOME_SCORE:
             currentGameData.home_score = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Home Score: %d", currentGameData.home_score);
             break;
           case AWAY_SCORE:
             currentGameData.away_score = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Away Score: %d", currentGameData.away_score);
             break;
           case INNING:
             currentGameData.inning = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Inning: %d", currentGameData.inning);
             break;
           case INNING_HALF:
             strcpy(currentGameData.inning_half,t->value->cstring);
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Inning Half: %s", currentGameData.inning_half);
             break;
           case BALLS:
             currentGameData.balls = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Balls: %d", currentGameData.balls);
             break;
           case STRIKES:
             currentGameData.strikes = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Strikes: %d", currentGameData.strikes);
             break;
           case OUTS:
             currentGameData.outs = (int)t->value->int32;
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Outs: %d", currentGameData.outs);
             break;
           default:
+            APP_LOG(APP_LOG_LEVEL_DEBUG, "From Message, Unhandled Key: %d", (int)t->key);
             break;
         }
         t = dict_read_next(received);
@@ -890,6 +927,9 @@ static void window_load(Window *window) {
     s_team_logo_layer = bitmap_layer_create(GRect(-18, -6, bounds.size.w + 18, 119));
   #endif
   bitmap_layer_set_compositing_mode(s_team_logo_layer, GCompOpSet);
+  #ifdef PBL_PLATFORM_EMERY
+    bitmap_layer_set_background_color(s_team_logo_layer, userSettings.background_color);
+  #endif
   
   // Load custom fonts
   s_font_mlb_40 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MLB_40));
@@ -912,7 +952,7 @@ static void window_load(Window *window) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Time 2.0 Layout");
     s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 7) + 2, 50, 25));
     s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 8) + 10, 50, 25));
-    s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 14, 50, 25));
+    s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 11, 50, 25));
     s_away_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 7) + 2, ((bounds.size.w / 5) * 4) - 0, 30));
     s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 8) + 10, ((bounds.size.w / 5) * 4) - 0, 30));
     s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 4) * 3), ((bounds.size.h / 10) * 7) + 14, ((bounds.size.w / 5) * 3) - 5, 45));
@@ -921,7 +961,7 @@ static void window_load(Window *window) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Rectangular Layout");
     s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 7) + 2, 50, 25));
     s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 8) + 10, 50, 25));
-    s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 14, 50, 25));
+    s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 11, 50, 25));
     s_away_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 7) + 2, ((bounds.size.w / 5) * 4) - 0, 30));
     s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 8) + 10, ((bounds.size.w / 5) * 4) - 0, 30));
     s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 3), ((bounds.size.h / 10) * 7) + 14, ((bounds.size.w / 5) * 3) - 5, 45));
@@ -947,11 +987,13 @@ static void window_load(Window *window) {
   sliding_text_layer_set_text(s_away_team_layer, "");
   sliding_text_layer_set_font(s_away_team_layer, s_font_capital_20);
   sliding_text_layer_set_text_alignment(s_away_team_layer, GTextAlignmentLeft);
-  
+  sliding_text_layer_set_duration(s_away_team_layer, 500);
+
   sliding_text_layer_set_text_color(s_home_team_layer, userSettings.primary_color);
   sliding_text_layer_set_text(s_home_team_layer, "");
   sliding_text_layer_set_font(s_home_team_layer, s_font_capital_20);
   sliding_text_layer_set_text_alignment(s_home_team_layer, GTextAlignmentLeft);
+  sliding_text_layer_set_duration(s_home_team_layer, 500);
   
   sliding_text_layer_set_text_color(s_game_time_layer, userSettings.primary_color);
   sliding_text_layer_set_text(s_game_time_layer, "");
@@ -1074,12 +1116,19 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   // A tap event occured
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Tap detected.");
   if(userSettings.shake_enabeled == 1){
     if(currentGameData.status < 2){
       if (slide_number == 0){
         show_broadcasts();
       }
-    }
+      else {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Already showing broadcasts, ignoring tap.");
+      }
+    } else {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Game in progress, ignoring tap.");}
+  } else {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Shake to show broadcasts disabled, ignoring tap.");
   }
   
 }
