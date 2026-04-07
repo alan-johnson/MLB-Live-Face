@@ -25,7 +25,19 @@ var backgroundColor = "AA0000";
 
 // Global Variables
 var offset = 0;
-var teams = ["", "LAA", "HOU", "OAK", "TOR", "ATL", "MIL", "STL", "CHC", "ARI", "LAD", "SF", "CLE", "SEA", "MIA", "NYM", "WSH", "BAL", "SD", "PHI", "PIT", "TEX", "TB", "BOS", "CIN", "COL", "KC", "DET", "MIN", "CWS", "NYY", "NL", "AL"];
+// Cache of the last successful non-zero game data, keyed by local date string.
+// Used to keep showing the final score until midnight even if a subsequent
+// refresh returns 0 games (transient API error or game removed from schedule).
+var lastGameResult = null;  // { date: 'YYYY-MM-DD', data: { number_of_games, game_data } }
+
+function getCurrentDate() {
+  var d = new Date();
+  return d.getFullYear() + '-' +
+         ('0' + (d.getMonth() + 1)).slice(-2) + '-' +
+         ('0' + d.getDate()).slice(-2);
+}
+
+var teams =["", "LAA", "HOU", "OAK", "TOR", "ATL", "MIL", "STL", "CHC", "ARI", "LAD", "SF", "CLE", "SEA", "MIA", "NYM", "WSH", "BAL", "SD", "PHI", "PIT", "TEX", "TB", "BOS", "CIN", "COL", "KC", "DET", "MIN", "CWS", "NYY", "NL", "AL"];
 // Official MLB Stats API team IDs, parallel to teams[]
 var teamIds = [0, 108, 117, 133, 141, 144, 158, 138, 112, 109, 119, 137, 114, 136, 146, 121, 120, 110, 135, 143, 134, 140, 139, 111, 113, 115, 118, 116, 142, 145, 147, 0, 0];
 var retry = 0;
@@ -272,22 +284,26 @@ function chooseGame(data){
 
 // Function to process the incoming data
 function processGameData(gameData){
-  // Game times are already in local time from transformMLBGame(); no timezone correction needed
   var number_of_games = gameData.number_of_games;
-  // Route the game data based on number of games
+  var today = getCurrentDate();
+
   if (number_of_games === 0) {
-    // If no game, only report no game
-    var dictionary = {
-      'TYPE':1,
-      'NUM_GAMES': 0
-    };
-    sendDataToWatch(dictionary);
-  } else if (number_of_games == 1){
-    // If one game, determine information to send to watch
-    compileDataForWatch(gameData, 0);
-  } else{
-    // If multiple games, determine which game is relevant
-    compileDataForWatch(gameData, chooseGame(gameData));
+    // No games returned — check if we have a cached result from today
+    if (lastGameResult && lastGameResult.date === today) {
+      // Resend today's last known data rather than showing "No Game Today"
+      processGameData(lastGameResult.data);
+    } else {
+      var dictionary = { 'TYPE':1, 'NUM_GAMES': 0 };
+      sendDataToWatch(dictionary);
+    }
+  } else {
+    // Cache this successful result for today
+    lastGameResult = { date: today, data: gameData };
+    if (number_of_games == 1){
+      compileDataForWatch(gameData, 0);
+    } else {
+      compileDataForWatch(gameData, chooseGame(gameData));
+    }
   }
 }
 
@@ -413,6 +429,9 @@ function getGameData(offset){
 
 // Function called to refresh game data
 function newGameDataRequest(){
+  // Reset retry counter so each scheduled refresh gets a fresh attempt.
+  retry = 0;
+  reload_timeout = 0;
   // Always use today's local date (offset 0).
   // After local midnight the date increments naturally, so the final score of
   // a completed game remains visible until the first refresh after midnight,
@@ -484,7 +503,11 @@ function loadSettings(){
 // Function to store settings
 function storeSettings(configuration){
   if (configuration.hasOwnProperty('favorite_team') === true) {
-    favoriteTeam = parseInt(configuration.favorite_team);
+    var newTeam = parseInt(configuration.favorite_team);
+    if (newTeam !== favoriteTeam) {
+      lastGameResult = null;
+    }
+    favoriteTeam = newTeam;
     localStorage.setItem(1, favoriteTeam);
   }
   if (configuration.hasOwnProperty('shake_enabeled') === true) {

@@ -309,19 +309,15 @@ static void startGame(){
 static void endGame(){
   // Set Teams
   change_teams();
-  // Set Score Change
+  // Set Scores
   sliding_text_layer_set_text_alignment(s_away_data_layer, GTextAlignmentRight);
   sliding_text_layer_set_text_alignment(s_home_data_layer, GTextAlignmentRight);
-  if (currentGameData.away_score != previousGameData.away_score){
-    snprintf(away_score, sizeof(away_score), "%d                     ", currentGameData.away_score);
-    sliding_text_layer_set_next_text(s_away_data_layer, away_score);
-    sliding_text_layer_animate_down(s_away_data_layer);
-  }
-  if (currentGameData.home_score != previousGameData.home_score){
-    snprintf(home_score, sizeof(home_score), "%d                     ", currentGameData.home_score);
-    sliding_text_layer_set_next_text(s_home_data_layer, home_score);
-    sliding_text_layer_animate_down(s_home_data_layer);
-  }
+  snprintf(away_score, sizeof(away_score), "%d                     ", currentGameData.away_score);
+  sliding_text_layer_set_next_text(s_away_data_layer, away_score);
+  sliding_text_layer_animate_down(s_away_data_layer);
+  snprintf(home_score, sizeof(home_score), "%d                     ", currentGameData.home_score);
+  sliding_text_layer_set_next_text(s_home_data_layer, home_score);
+  sliding_text_layer_animate_down(s_home_data_layer);
   // Animate Inning to "Final"
   sliding_text_layer_set_font(s_inning_layer, s_font_capital_20);
   sliding_text_layer_set_next_text(s_inning_layer, "Final");
