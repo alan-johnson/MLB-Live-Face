@@ -393,6 +393,11 @@ static void showNoGame(){
     rotate_clear(s_away_team_layer, 1);
     rotate_clear(s_home_team_layer, 1);
     rotate_clear(s_game_time_layer, 1);
+    // Clear game status so canvas layers stop drawing bases/BSO/inning state
+    currentGameData.status = 0;
+    update_bases();
+    update_bso();
+    update_inning_state();
     // Show No Game
     sliding_text_layer_set_next_text(s_loading_layer, "No Game Today");
     sliding_text_layer_animate_down(s_loading_layer);

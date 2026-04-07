@@ -51,13 +51,6 @@ function lastName(fullName) {
   return parts[parts.length - 1];
 }
 
-// Function to get the timezone offset (hours to add to local time to get Eastern Time)
-function getTimezoneOffsetHours(){
-  var offsetHours = new Date().getTimezoneOffset() / 60;
-  offsetHours = offsetHours - 4;
-  return offsetHours;
-}
-
 // Function to parse a score
 function parseScore(raw_score){
   var score = parseInt(raw_score);
@@ -420,22 +413,12 @@ function getGameData(offset){
 
 // Function called to refresh game data
 function newGameDataRequest(){
-  // Get Timezone offset and convert to eastern time
-  var now = new Date();
-  var hours = now.getHours() + getTimezoneOffsetHours();
-  if(hours > 23){
-    hours = hours - 24;
-  }
-  // Determine if before 11 am EST
-  if (hours > 10) {
-    // If after 10:59, offset 0
-    offset = 0;
-    getGameData(offset);
-  } else {
-    // If before 11:00, offset -1
-    offset = -1;
-    getGameData(offset);
-  }
+  // Always use today's local date (offset 0).
+  // After local midnight the date increments naturally, so the final score of
+  // a completed game remains visible until the first refresh after midnight,
+  // at which point the new day's schedule is fetched.
+  offset = 0;
+  getGameData(offset);
 }
 
 // Function to append settings to data
@@ -574,8 +557,19 @@ Pebble.addEventListener('showConfiguration', function() {
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
-  if (!e || !e.response) { return; }
-  var settings = clay.getSettings(e.response);
+  if (!e || !e.response) { 
+    console.log('No configuration received to save.');
+    return; 
+  }
+  console.log('Configuration received: ' + e.response);
+  var raw = clay.getSettings(e.response, false);
+  // Unwrap Clay's {value: ...} objects into a flat key→value map
+  var settings = {};
+  Object.keys(raw).forEach(function(key) {
+    settings[key] = (raw[key] !== null && typeof raw[key] === 'object' && raw[key].hasOwnProperty('value'))
+      ? raw[key].value
+      : raw[key];
+  });
   // Clay returns color picker values as 24-bit integers; convert to 6-char hex
   // strings so the existing storeSettings() / C-side GColorFromHEX() code works.
   ['primary_color', 'secondary_color', 'background_color'].forEach(function(key) {
