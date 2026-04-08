@@ -155,7 +155,7 @@ static void initialize_settings(){
 }
 
 // Global Settings
-int slide_number = 0;
+static AppTimer *s_broadcast_timer = NULL;
 int update_number = 0;
 int showing_loading_screen = 1;
 int showing_no_game = 0;
@@ -204,22 +204,28 @@ enum {
 };
 
 // On Wrist Shake Functions
-static void show_broadcasts(){
-  if(currentGameData.num_games > 0){
-    sliding_text_layer_set_next_text(s_away_data_layer, currentGameData.away_broadcast);
-    sliding_text_layer_animate_down(s_away_data_layer);
-    sliding_text_layer_set_next_text(s_home_data_layer, currentGameData.home_broadcast);
-    sliding_text_layer_animate_down(s_home_data_layer);
-    slide_number = 1;
-  }
-}
 static void show_pitchers(){
   if(currentGameData.num_games > 0){
     sliding_text_layer_set_next_text(s_away_data_layer, currentGameData.away_pitcher);
     sliding_text_layer_animate_up(s_away_data_layer);
     sliding_text_layer_set_next_text(s_home_data_layer, currentGameData.home_pitcher);
     sliding_text_layer_animate_up(s_home_data_layer);
-    slide_number = 0;
+  }
+}
+static void broadcast_timer_callback(void *data) {
+  s_broadcast_timer = NULL;
+  show_pitchers();
+}
+static void show_broadcasts(){
+  if(currentGameData.num_games > 0){
+    if (s_broadcast_timer) {
+      app_timer_cancel(s_broadcast_timer);
+    }
+    sliding_text_layer_set_next_text(s_away_data_layer, currentGameData.away_broadcast);
+    sliding_text_layer_animate_down(s_away_data_layer);
+    sliding_text_layer_set_next_text(s_home_data_layer, currentGameData.home_broadcast);
+    sliding_text_layer_animate_down(s_home_data_layer);
+    s_broadcast_timer = app_timer_register(userSettings.shake_time * 1000, broadcast_timer_callback, NULL);
   }
 }
 
@@ -389,8 +395,12 @@ static void showNoGame(){
     rotate_clear(s_away_team_layer, 1);
     rotate_clear(s_home_team_layer, 1);
     rotate_clear(s_game_time_layer, 1);
-    // Clear game status so canvas layers stop drawing bases/BSO/inning state
+    // Clear game status and team data so canvas layers stop drawing and the
+    // next game's route_graphic_updates() detects a team change even if the
+    // same teams play again the following day.
     currentGameData.status = 0;
+    currentGameData.home_team[0] = '\0';
+    currentGameData.away_team[0] = '\0';
     update_bases();
     update_bso();
     update_inning_state();
@@ -459,6 +469,14 @@ static void route_graphic_updates(){
     // New Game Fallback
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to New Game, fallback.");
     newGame();
+  } else if (currentGameData.status == 1){
+    // Preview state, same status — refresh if pitcher or game time changed
+    if ((strcmp(currentGameData.home_pitcher, previousGameData.home_pitcher) != 0) ||
+        (strcmp(currentGameData.away_pitcher, previousGameData.away_pitcher) != 0) ||
+        (strcmp(currentGameData.game_time, previousGameData.game_time) != 0)){
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to New Game (preview data changed).");
+      newGame();
+    }
   } else if (currentGameData.status == 2){
     // Declare the dictionary's iterator
     int instructions[6] = { 0, 0, 0, 0, 0, 0 };
@@ -1057,11 +1075,7 @@ static void window_unload(Window *window) {
   layer_destroy(s_bases_layer);
 }
 
-static void update_time() {
-  // Get a tm structure
-  time_t temp = time(NULL);
-  struct tm *tick_time = localtime(&temp);
-
+static void update_time(struct tm *tick_time) {
   // Write the current hours and minutes into a buffer
   static char s_buffer[8];
   if(clock_is_24h_style() == true) {
@@ -1074,44 +1088,37 @@ static void update_time() {
     if( ( n = strspn(s_buffer, "0" ) ) != 0 && s_buffer[n] != '\0' ) {
       memmove(s_buffer, &s_buffer[n], strlen(s_buffer) - n + 1);
     }
-    
+
   }
   // Display this time on the TextLayer if the time changed
   if (strcmp(s_buffer, s_buffer_prev) != 0){
     text_layer_set_text(s_time_layer, s_buffer);
     snprintf(s_buffer_prev, sizeof(s_buffer_prev), "%s", s_buffer);
   }
-  
+
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  update_time();
-  if (slide_number > 0){
-    slide_number++;
-    if (slide_number >= userSettings.shake_time){
-      show_pitchers();
-      slide_number = 0;
-    }
-  }
-  
+  update_time(tick_time);
+
   update_number++;
-  
-  if (currentGameData.status > 0 && currentGameData.status < 3){
-    if (update_number >= userSettings.refresh_time_on){
-      // Update
+
+  // refresh_time_on and refresh_time_off are stored in seconds; divide by 60 for
+  // the minute-based counter.  Minimum effective interval is 1 minute.
+  if (currentGameData.status == 2){
+    int threshold = userSettings.refresh_time_on / 60;
+    if (threshold < 1) { threshold = 1; }
+    if (update_number >= threshold){
       request_update();
       update_number = 0;
     }
   } else {
-    if (update_number >= userSettings.refresh_time_off){
-      // Update
+    int threshold = userSettings.refresh_time_off / 60;
+    if (threshold < 1) { threshold = 1; }
+    if (update_number >= threshold){
       request_update();
       update_number = 0;
     }
-  }
-  // Fallback to update colors on aplite
-  if(color_update == 0){
-    request_color_update();
   }
 }
 
@@ -1120,7 +1127,7 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Tap detected.");
   if(userSettings.shake_enabeled == 1){
     if(currentGameData.status < 2){
-      if (slide_number == 0){
+      if (s_broadcast_timer == NULL){
         show_broadcasts();
       }
       else {
@@ -1145,10 +1152,13 @@ void init(void) {
     .unload = window_unload
   });
 	window_stack_push(window, true);
-	update_time();
-  
-  // Register with TickTimerService
-  tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+  time_t now = time(NULL);
+  update_time(localtime(&now));
+
+  // Register with TickTimerService — MINUTE_UNIT fires once per minute,
+  // which is sufficient since the time display only changes every minute.
+  // The broadcast-revert countdown uses a one-shot AppTimer instead.
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   accel_tap_service_subscribe(accel_tap_handler);
   
     // Register AppMessage handlers
@@ -1161,6 +1171,9 @@ void init(void) {
   #else
     app_message_open(300, 50);
   #endif
+  // Request settings once at startup. The phone JS sends them proactively on
+  // its "ready" event, but this covers the race where that message is dropped.
+  request_color_update();
 }
 
 void deinit(void) {

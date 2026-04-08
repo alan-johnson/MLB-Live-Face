@@ -88,7 +88,12 @@ function formatGameTime(isoString) {
 }
 
 // Map MLB Stats API detailedState values to the status strings compileDataForWatch() expects
-function mapGameStatus(detailedState) {
+function mapGameStatus(detailedState, abstractGameState) {
+  // abstractGameState is the authoritative final-state signal from the API.
+  // Check it first so that games with an unusual detailedState (e.g. "Suspended")
+  // that are officially over still resolve to Final.
+  if (abstractGameState === 'Final') { return 'Final'; }
+  if (!detailedState) { return 'Preview'; }
   if (detailedState === 'Scheduled') { return 'Preview'; }
   if (detailedState === 'Game Over' || detailedState === 'Completed Early') { return 'Final'; }
   // Delayed/suspended games were already in progress; keep them as such
@@ -125,7 +130,7 @@ function transformMLBGame(game) {
   var awayBroadcasts  = getBroadcasts(game.broadcasts, 'away');
 
   return {
-    game_status:          mapGameStatus(game.status.detailedState),
+    game_status:          mapGameStatus(game.status.detailedState, game.status.abstractGameState),
     home_team:            normalizeAbbrev(game.teams.home.team.abbreviation || teamIdToAbbrev[game.teams.home.team.id] || ''),
     away_team:            normalizeAbbrev(game.teams.away.team.abbreviation || teamIdToAbbrev[game.teams.away.team.id] || ''),
     home_pitcher:         lastName((game.teams.home.probablePitcher && game.teams.home.probablePitcher.fullName) || ''),
@@ -219,8 +224,8 @@ function compileDataForWatch(raw_data, game){
 }
 
 function within_30_minutes(game_time){
-  var game_hours = game_time.split(":")[0];
-  var game_minutes = game_time.split(":")[1];
+  var game_hours = parseInt(game_time.split(":")[0]);
+  var game_minutes = parseInt(game_time.split(":")[1]);
   var now = new Date();
   var hours = now.getHours();
   if (hours > 12) {
@@ -230,7 +235,7 @@ function within_30_minutes(game_time){
   if (game_hours > hours + 1){
     return false;
   } else if (game_hours > hours) {
-    if ((60 + game_hours) - minutes > 30){
+    if ((60 + game_minutes) - minutes > 30){
       return false;
     } else {
       return true;
@@ -256,7 +261,7 @@ function chooseGame(data){
   var game_2_time = data.game_data[1].game_time;
 
   // Determine which game to use
-  if (game_1_status == 'Preview' || game_1_status == 'Warmnp' || game_1_status == 'In Progress' || game_1_status == 'Pre-Game'){
+  if (game_1_status == 'Preview' || game_1_status == 'Warmup' || game_1_status == 'In Progress' || game_1_status == 'Pre-Game'){
     // If first game has not started yet or is in progress, use first game
     game = 0;
   } else if (game_1_status == 'Final' && within_30_minutes(game_2_time) === false){
@@ -291,8 +296,10 @@ function processGameData(gameData){
     // No games returned — check if we have a cached result from today
     if (lastGameResult && lastGameResult.date === today) {
       // Resend today's last known data rather than showing "No Game Today"
+      console.log('0 games from API; reusing cached result for ' + today);
       processGameData(lastGameResult.data);
     } else {
+      console.log('No games found for ' + today + ' (team index ' + favoriteTeam + ', id ' + teamIds[favoriteTeam] + '); sending NO_GAME_TODAY');
       var dictionary = { 'TYPE':1, 'NUM_GAMES': 0 };
       sendDataToWatch(dictionary);
     }
@@ -359,6 +366,7 @@ function getGameData(offset){
     reload_timeout = 0;
     var games = (raw.dates && raw.dates.length > 0) ? raw.dates[0].games : [];
     var number_of_games = games.length;
+    console.log('API date=' + date + ' teamId=' + teamId + ' games=' + number_of_games + ' retry=' + retry);
 
     // Check for All-Star game (NL or AL team on either side)
     if (number_of_games === 1) {
@@ -378,6 +386,7 @@ function getGameData(offset){
     try {
       game_data = games.map(transformMLBGame);
     } catch(e) {
+      console.log('transformMLBGame error: ' + e.message);
       processGameData({ number_of_games: 0, game_data: [] });
       return;
     }
@@ -461,42 +470,28 @@ function sendSettings(){
 
 // Function to load the stored settings
 function loadSettings(){
-  favoriteTeam = localStorage.getItem(1);
-  if(favoriteTeam === null){
-    favoriteTeam = 8;
-  }
-  shakeEnabled = localStorage.getItem(2);
-  if(shakeEnabled === null){
-    shakeEnabled = 1;
-  }
-  shakeTime = localStorage.getItem(3);
-  if(shakeTime === null){
-    shakeTime = 5;
-  }
-  refreshTime[0] = localStorage.getItem(4);
-  if(refreshTime[0] === null){
-    refreshTime[0] = 3600;
-  }
-  refreshTime[1] = localStorage.getItem(5);
-  if(refreshTime[1] === null){
-    refreshTime[1] = 60;
-  }
-  primaryColor = localStorage.getItem(6);
-  if(primaryColor === null){
-    primaryColor = "FFFFFF";
-  }
-  secondaryColor = localStorage.getItem(7);
-  if(secondaryColor === null){
-    secondaryColor = "FFFFFF";
-  }
-  backgroundColor = localStorage.getItem(8);
-  if(backgroundColor === null){
-    backgroundColor = "AA0000";
-  }
-  basesDisplay = localStorage.getItem(9);
-  if(basesDisplay === null){
-    basesDisplay = 1;
-  }
+  var stored = parseInt(localStorage.getItem(1));
+  favoriteTeam = isNaN(stored) ? 8 : stored;
+
+  stored = parseInt(localStorage.getItem(2));
+  shakeEnabled = isNaN(stored) ? 1 : stored;
+
+  stored = parseInt(localStorage.getItem(3));
+  shakeTime = isNaN(stored) ? 5 : stored;
+
+  stored = parseInt(localStorage.getItem(4));
+  refreshTime[0] = isNaN(stored) ? 3600 : stored;
+
+  stored = parseInt(localStorage.getItem(5));
+  refreshTime[1] = isNaN(stored) ? 60 : stored;
+
+  primaryColor = localStorage.getItem(6) || "FFFFFF";
+  secondaryColor = localStorage.getItem(7) || "FFFFFF";
+  backgroundColor = localStorage.getItem(8) || "AA0000";
+
+  stored = parseInt(localStorage.getItem(9));
+  basesDisplay = isNaN(stored) ? 1 : stored;
+
   sendSettings();
 }
 
