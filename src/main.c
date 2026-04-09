@@ -474,8 +474,9 @@ static void route_graphic_updates(){
     // New Game Fallback
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Routing to New Game, fallback.");
     newGame();
-  } else if (currentGameData.status == 1){
-    // Preview state, same status — refresh if pitcher or game time changed
+  } else if (currentGameData.status == 0 || currentGameData.status == 1){
+    // Preview/Warmup/Pre-Game steady state — refresh display if pitchers or
+    // game time changed (e.g. pitchers announced after the first overnight refresh)
     if ((strcmp(currentGameData.home_pitcher, previousGameData.home_pitcher) != 0) ||
         (strcmp(currentGameData.away_pitcher, previousGameData.away_pitcher) != 0) ||
         (strcmp(currentGameData.game_time, previousGameData.game_time) != 0)){
