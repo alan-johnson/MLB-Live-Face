@@ -1,5 +1,6 @@
 // Clay configuration
-var Clay = require('pebble-clay');
+//var Clay = require('pebble-clay');
+var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
@@ -89,12 +90,11 @@ function formatGameTime(isoString) {
 
 // Map MLB Stats API detailedState values to the status strings compileDataForWatch() expects
 function mapGameStatus(detailedState, abstractGameState) {
-  // abstractGameState is the authoritative final-state signal from the API.
-  // Check it first so that games with an unusual detailedState (e.g. "Suspended")
-  // that are officially over still resolve to Final.
-  if (abstractGameState === 'Final') { return 'Final'; }
   if (!detailedState) { return 'Preview'; }
   if (detailedState === 'Scheduled') { return 'Preview'; }
+  // Treat as Final only when both fields agree — abstractGameState alone can
+  // flash 'Final' transiently during reviews or long breaks mid-game.
+  if (abstractGameState === 'Final' && (detailedState === 'Final' || detailedState === 'Game Over' || detailedState === 'Completed Early')) { return 'Final'; }
   if (detailedState === 'Game Over' || detailedState === 'Completed Early') { return 'Final'; }
   // Delayed/suspended games were already in progress; keep them as such
   if (detailedState === 'Delay' || detailedState.indexOf('Delayed') === 0 || detailedState === 'Suspended') { return 'In Progress'; }

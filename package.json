@@ -1,6 +1,7 @@
 {
     "author": "Chris Schlitt",
     "dependencies": {
+        "@rebble/clay": "^1.0.8",
         "pebble-clay": "^1.0.4"
     },
     "keywords": [],
@@ -938,7 +939,8 @@
             "basalt",
             "chalk",
             "diorite",
-            "emery"
+            "emery",
+            "gabbro"
         ],
         "uuid": "3ae16b33-47d1-4479-8f41-b5face25f3ca",
         "watchapp": {

@@ -158,6 +158,10 @@ static void initialize_settings(){
 static AppTimer *s_broadcast_timer = NULL;
 static AppTimer *s_retry_timer = NULL;
 int update_number = 0;
+// Counts how many consecutive fast-rate refreshes have confirmed Final status.
+// We require 3 consecutive Final responses before switching to the slow rate,
+// guarding against a transient Final from the API mid-game.
+static int final_confirm_count = 0;
 int showing_loading_screen = 1;
 int showing_no_game = 0;
 	
@@ -704,6 +708,15 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
         t = dict_read_next(received);
       }
       
+      // Update Final confirmation counter.
+      // Increment on each consecutive Final; reset on any other status so a
+      // recovered In Progress after a transient Final restarts the count.
+      if (currentGameData.status == 3) {
+        if (final_confirm_count < 3) { final_confirm_count++; }
+      } else {
+        final_confirm_count = 0;
+      }
+
       // After processing data, route graphic updates
       route_graphic_updates();
     }
@@ -1132,9 +1145,14 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
   update_number++;
 
-  // refresh_time_on and refresh_time_off are stored in seconds; divide by 60 for
-  // the minute-based counter.  Minimum effective interval is 1 minute.
-  if (currentGameData.status == 2){
+  // refresh_time_on and refresh_time_off are stored in seconds; divide by 60
+  // for the minute-based counter.  Minimum effective interval is 1 minute.
+  //
+  // After receiving Final (status 3), stay on the fast refresh rate until
+  // final_confirm_count reaches 3 consecutive confirmations. This prevents a
+  // transient API 'Final' mid-game from locking the watch into the slow rate.
+  int use_fast_rate = (currentGameData.status == 2) || (currentGameData.status == 3 && final_confirm_count < 3);
+  if (use_fast_rate){
     int threshold = userSettings.refresh_time_on / 60;
     if (threshold < 1) { threshold = 1; }
     if (update_number >= threshold){
