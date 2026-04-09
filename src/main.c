@@ -441,7 +441,7 @@ static void change_colors(){
   s_team_logo = gbitmap_create_with_resource(logo[userSettings.favorite_team]);
   bitmap_layer_set_bitmap(s_team_logo_layer, s_team_logo);
   layer_mark_dirty(bitmap_layer_get_layer(s_team_logo_layer));
-  #ifdef PBL_PLATFORM_EMERY
+  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
     bitmap_layer_set_background_color(s_team_logo_layer, userSettings.background_color);
   #endif
 }
@@ -963,13 +963,19 @@ static void window_load(Window *window) {
   window_set_background_color(window, userSettings.background_color);
   
   // Load team logo
-  #ifdef PBL_ROUND
+  // Each platform gets a layer rect sized to its logo image dimensions.
+  // Emery: 200x128, Gabbro: 260x163, Round (Chalk): 180x113, Rect: 180x113 (with -18 offset trick)
+  #ifdef PBL_PLATFORM_GABBRO
+    s_team_logo_layer = bitmap_layer_create(GRect(0, 0, 260, 163));
+  #elif defined(PBL_PLATFORM_EMERY)
+    s_team_logo_layer = bitmap_layer_create(GRect(0, -6, 200, 128));
+  #elif defined(PBL_ROUND)
     s_team_logo_layer = bitmap_layer_create(GRect(0, 0, bounds.size.w, 113));
   #else
     s_team_logo_layer = bitmap_layer_create(GRect(-18, -6, bounds.size.w + 18, 119));
   #endif
   bitmap_layer_set_compositing_mode(s_team_logo_layer, GCompOpSet);
-  #ifdef PBL_PLATFORM_EMERY
+  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
     bitmap_layer_set_background_color(s_team_logo_layer, userSettings.background_color);
   #endif
   
