@@ -29,6 +29,8 @@ var offset = 0;
 // Used to keep showing the final score until midnight even if a subsequent
 // refresh returns 0 games (transient API error or game removed from schedule).
 var lastGameResult = null;  // { date: 'YYYY-MM-DD', data: { number_of_games, game_data } }
+// Timer handle for proactive game-start refresh.
+var s_start_timer = null;
 
 function getCurrentDate() {
   var d = new Date();
@@ -135,6 +137,7 @@ function transformMLBGame(game) {
     home_pitcher:         lastName((game.teams.home.probablePitcher && game.teams.home.probablePitcher.fullName) || ''),
     away_pitcher:         lastName((game.teams.away.probablePitcher && game.teams.away.probablePitcher.fullName) || ''),
     game_time:            formatGameTime(game.gameDate),
+    game_start_ms:        new Date(game.gameDate).getTime(),
     home_tv_broadcast:    homeBroadcasts.tv,
     home_radio_broadcast: homeBroadcasts.radio,
     away_tv_broadcast:    awayBroadcasts.tv,
@@ -190,6 +193,25 @@ function compileDataForWatch(raw_data, game){
     }
     sendDataToWatch(dictionary);
 
+    // Schedule a proactive refresh near the actual game start time so the
+    // watch doesn't have to wait up to refresh_time_off minutes to notice
+    // the game has started.
+    if (s_start_timer) { clearTimeout(s_start_timer); s_start_timer = null; }
+    var msUntilStart = data.game_start_ms - Date.now();
+    if (msUntilStart > 0 && msUntilStart <= 90 * 60 * 1000) {
+      // Game starts within 90 minutes — fire 60 s after scheduled start.
+      s_start_timer = setTimeout(function() {
+        s_start_timer = null;
+        newGameDataRequest();
+      }, msUntilStart + 60000);
+    } else if (msUntilStart <= 0 && msUntilStart > -30 * 60 * 1000) {
+      // Scheduled start just passed but game still shows Pre-Game — retry in 2 min.
+      s_start_timer = setTimeout(function() {
+        s_start_timer = null;
+        newGameDataRequest();
+      }, 2 * 60 * 1000);
+    }
+
   } else if (game_status == 'In Progress'){
 
     dictionary.NUM_GAMES = 1;
@@ -206,6 +228,7 @@ function compileDataForWatch(raw_data, game){
     dictionary.BALLS = parseInt(data.balls);
     dictionary.STRIKES = parseInt(data.strikes);
     dictionary.OUTS = parseInt(data.outs);
+    if (s_start_timer) { clearTimeout(s_start_timer); s_start_timer = null; }
     sendDataToWatch(dictionary);
 
   } else {
@@ -217,6 +240,7 @@ function compileDataForWatch(raw_data, game){
     dictionary.HOME_SCORE = parseScore(data.home_score);
     dictionary.AWAY_SCORE = parseScore(data.away_score);
     dictionary.INNING = parseInt(data.inning);
+    if (s_start_timer) { clearTimeout(s_start_timer); s_start_timer = null; }
     sendDataToWatch(dictionary);
 
   }

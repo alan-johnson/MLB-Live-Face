@@ -1043,7 +1043,11 @@ static void window_load(Window *window) {
   
   // Improve the layout to be more like a watchface
   text_layer_set_text_color(s_time_layer, userSettings.secondary_color);
-  text_layer_set_background_color(s_time_layer, GColorClear);
+  #ifdef PBL_COLOR
+    text_layer_set_background_color(s_time_layer, GColorClear);
+  #else
+    text_layer_set_background_color(s_time_layer, GColorBlack);
+  #endif
   text_layer_set_text(s_time_layer, "00:00");
   text_layer_set_font(s_time_layer, s_font_mlb_40);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
