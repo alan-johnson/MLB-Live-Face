@@ -48,164 +48,865 @@
                 {
                     "file": "images/nl.png",
                     "name": "NL",
-                    "targetPlatforms": null,
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/nl.png",
+                    "name": "NL",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/nl.png",
+                    "name": "NL",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/al.png",
                     "name": "AL",
-                    "targetPlatforms": null,
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/al.png",
+                    "name": "AL",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/al.png",
+                    "name": "AL",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/was.png",
                     "name": "NATIONALS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/was.png",
+                    "name": "NATIONALS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/was.png",
+                    "name": "NATIONALS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/tor.png",
                     "name": "BLUEJAYS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/tor.png",
+                    "name": "BLUEJAYS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/tor.png",
+                    "name": "BLUEJAYS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/tex.png",
                     "name": "RANGERS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/tex.png",
+                    "name": "RANGERS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/tex.png",
+                    "name": "RANGERS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/tb.png",
                     "name": "RAYS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/tb.png",
+                    "name": "RAYS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/tb.png",
+                    "name": "RAYS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/stl.png",
                     "name": "CARDINALS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/stl.png",
+                    "name": "CARDINALS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/stl.png",
+                    "name": "CARDINALS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/sf.png",
                     "name": "GIANTS",
-                    "targetPlatforms": null,
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/sf.png",
+                    "name": "GIANTS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/sf.png",
+                    "name": "GIANTS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/sea.png",
                     "name": "MARINERS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/sea.png",
+                    "name": "MARINERS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/sea.png",
+                    "name": "MARINERS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/sd.png",
                     "name": "PADRES",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/sd.png",
+                    "name": "PADRES",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/sd.png",
+                    "name": "PADRES",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/pit.png",
                     "name": "PIRATES",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/pit.png",
+                    "name": "PIRATES",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/pit.png",
+                    "name": "PIRATES",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/phi.png",
                     "name": "PHILLIES",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/phi.png",
+                    "name": "PHILLIES",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/phi.png",
+                    "name": "PHILLIES",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/oak.png",
                     "name": "ATHLETICS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/oak.png",
+                    "name": "ATHLETICS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/oak.png",
+                    "name": "ATHLETICS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/nyy.png",
                     "name": "YANKEES",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/nyy.png",
+                    "name": "YANKEES",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/nyy.png",
+                    "name": "YANKEES",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/nym.png",
                     "name": "METS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/nym.png",
+                    "name": "METS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/nym.png",
+                    "name": "METS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/min.png",
                     "name": "TWINS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/min.png",
+                    "name": "TWINS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/min.png",
+                    "name": "TWINS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/mil.png",
                     "name": "BREWERS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/mil.png",
+                    "name": "BREWERS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/mil.png",
+                    "name": "BREWERS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/mia.png",
                     "name": "MARLINS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/mia.png",
+                    "name": "MARLINS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/mia.png",
+                    "name": "MARLINS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/lad.png",
                     "name": "DODGERS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/lad.png",
+                    "name": "DODGERS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/lad.png",
+                    "name": "DODGERS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/laa.png",
                     "name": "ANGELS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/laa.png",
+                    "name": "ANGELS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/laa.png",
+                    "name": "ANGELS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/kc.png",
                     "name": "ROYALS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/kc.png",
+                    "name": "ROYALS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/kc.png",
+                    "name": "ROYALS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/hou.png",
                     "name": "ASTROS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/hou.png",
+                    "name": "ASTROS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/hou.png",
+                    "name": "ASTROS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/det.png",
                     "name": "TIGERS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/det.png",
+                    "name": "TIGERS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/det.png",
+                    "name": "TIGERS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/col.png",
                     "name": "ROCKIES",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/col.png",
+                    "name": "ROCKIES",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/col.png",
+                    "name": "ROCKIES",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/cle.png",
                     "name": "INDIANS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/cle.png",
+                    "name": "INDIANS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/cle.png",
+                    "name": "INDIANS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/cin.png",
                     "name": "REDS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/cin.png",
+                    "name": "REDS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/cin.png",
+                    "name": "REDS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/chw.png",
                     "name": "WHITESOX",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/chw.png",
+                    "name": "WHITESOX",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/chw.png",
+                    "name": "WHITESOX",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/chc.png",
                     "name": "CUBS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/chc.png",
+                    "name": "CUBS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/chc.png",
+                    "name": "CUBS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/bos.png",
                     "name": "REDSOX",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/bos.png",
+                    "name": "REDSOX",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/bos.png",
+                    "name": "REDSOX",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/bal.png",
                     "name": "ORIOLES",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/bal.png",
+                    "name": "ORIOLES",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/bal.png",
+                    "name": "ORIOLES",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/atl.png",
                     "name": "BRAVES",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/atl.png",
+                    "name": "BRAVES",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/atl.png",
+                    "name": "BRAVES",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
                     "file": "images/ari.png",
                     "name": "DIAMONDBACKS",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk",
+                        "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/emery/ari.png",
+                    "name": "DIAMONDBACKS",
+                    "targetPlatforms": [
+                        "emery"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/gabbro/ari.png",
+                    "name": "DIAMONDBACKS",
+                    "targetPlatforms": [
+                        "gabbro"
+                    ],
                     "type": "png"
                 },
                 {
