@@ -256,13 +256,17 @@ static void change_teams(){
   }
 }
 
-static void request_update(){
+static void schedule_retry();  // forward declaration
+
+static bool request_update(){
   DictionaryIterator *iter;
   if (app_message_outbox_begin(&iter) != APP_MSG_OK || iter == NULL) {
-    return;
+    schedule_retry();
+    return false;
   }
   dict_write_uint32(iter, TYPE, 1);
   app_message_outbox_send();
+  return true;
 }
 
 static void request_color_update(){
@@ -1156,15 +1160,13 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     int threshold = userSettings.refresh_time_on / 60;
     if (threshold < 1) { threshold = 1; }
     if (update_number >= threshold){
-      request_update();
-      update_number = 0;
+      if (request_update()) { update_number = 0; }
     }
   } else {
     int threshold = userSettings.refresh_time_off / 60;
     if (threshold < 1) { threshold = 1; }
     if (update_number >= threshold){
-      request_update();
-      update_number = 0;
+      if (request_update()) { update_number = 0; }
     }
   }
 }

@@ -1,8 +1,7 @@
 {
     "author": "Chris Schlitt",
     "dependencies": {
-        "@rebble/clay": "^1.0.8",
-        "pebble-clay": "^1.0.4"
+        "@rebble/clay": "^1.0.8"
     },
     "keywords": [],
     "name": "mlb-live-face",
