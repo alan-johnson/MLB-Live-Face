@@ -156,6 +156,7 @@ static void initialize_settings(){
 
 // Global Settings
 static AppTimer *s_broadcast_timer = NULL;
+static AppTimer *s_retry_timer = NULL;
 int update_number = 0;
 int showing_loading_screen = 1;
 int showing_no_game = 0;
@@ -253,14 +254,18 @@ static void change_teams(){
 
 static void request_update(){
   DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK || iter == NULL) {
+    return;
+  }
   dict_write_uint32(iter, TYPE, 1);
   app_message_outbox_send();
 }
 
 static void request_color_update(){
   DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
+  if (app_message_outbox_begin(&iter) != APP_MSG_OK || iter == NULL) {
+    return;
+  }
   dict_write_uint32(iter, TYPE, 2);
   app_message_outbox_send();
 }
@@ -601,6 +606,12 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
 
       }
       
+      // Reset the refresh counter so the next update fires at the correct
+      // interval from *this* received update, not from the last sent request.
+      // Without this, a brief status change (e.g. transient showNoGame) would
+      // leave update_number at an arbitrary value, causing unpredictable timing.
+      update_number = 0;
+
       // Process the data set
       // Copy the old data set
       previousGameData = currentGameData;
@@ -700,16 +711,27 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
   }
 }
 
-// Called when an incoming message from PebbleKitJS is dropped
-static void in_dropped_handler(AppMessageResult reason, void *context) {	
-  // Reload data
+// Retry callback — fires after a short delay to avoid rapid-fire retries that
+// could flood the AppMessage event queue when the outbox is temporarily busy.
+static void retry_update_callback(void *data) {
+  s_retry_timer = NULL;
   request_update();
+}
+
+static void schedule_retry() {
+  if (s_retry_timer == NULL) {
+    s_retry_timer = app_timer_register(2000, retry_update_callback, NULL);
+  }
+}
+
+// Called when an incoming message from PebbleKitJS is dropped
+static void in_dropped_handler(AppMessageResult reason, void *context) {
+  schedule_retry();
 }
 
 // Called when PebbleKitJS does not acknowledge receipt of a message
 static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-  // Reload data
-  request_update();
+  schedule_retry();
 }
 
 // Graphics Drawing Functions
