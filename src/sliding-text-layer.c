@@ -44,6 +44,7 @@ lib/sliding-text-layer.h
 typedef struct SlidingTextLayerData {
   char* text_next;
   char* text_current;
+  char* text_for_animation;  // snapshot of text_next taken when animation starts
   GColor color_text;
   GFont font;
   bool is_animating;
@@ -237,6 +238,10 @@ static void animate(SlidingTextLayer* layer, uint8_t direction) {
   data->direction = direction;
   data->offset = 0;
   data->is_animating = true;
+  // Snapshot the intended target text now so that a subsequent set_next_text()
+  // call (from a second rapid message) cannot overwrite what this animation
+  // will commit when it finishes.
+  data->text_for_animation = data->text_next;
   data->animation = animation_create();
   animation_set_duration(data->animation, data->duration);
   animation_set_curve(data->animation, data->curve);
@@ -317,11 +322,16 @@ static void animation_started(Animation *anim, void *context) {
   data->is_animating = true;
 }
 
-static void animation_stopped(Animation *anim, bool stopped, void *context) {
+static void animation_stopped(Animation *anim, bool finished, void *context) {
   SlidingTextLayerData* data = get_data((SlidingTextLayer*)context);
   data->is_animating = false;
-  data->text_current = data->text_next;
-  data->text_next = false;
+  // Commit the text that was snapshotted when THIS animation started, not
+  // whatever text_next currently holds.  A second rapid message may have
+  // called set_next_text() mid-animation, overwriting text_next — committing
+  // that would display text from a different call than the one that animated.
+  data->text_current = data->text_for_animation;
+  data->text_next = NULL;
+  data->text_for_animation = NULL;
   layer_mark_dirty(get_layer((SlidingTextLayer*)context));
 #ifdef PBL_SDK_2
   animation_destroy(anim);

@@ -330,25 +330,29 @@ function chooseGame(data){
   return game;
 }
 
-// Function to process the incoming data
-function processGameData(gameData){
+// Function to process the incoming data.
+// requestDate: the YYYY-MM-DD date string used in the API request that
+// produced gameData.  Used as the cache key so a response that arrives after
+// local midnight is not stored under tomorrow's date with yesterday's games.
+function processGameData(gameData, requestDate){
   var number_of_games = gameData.number_of_games;
   var today = getCurrentDate();
 
   if (number_of_games === 0) {
-    // No games returned — check if we have a cached result from today
+    // No games returned — check if we have a cached result from today's schedule.
+    // Only reuse the cache when the cached date matches today; a response
+    // processed after midnight must not re-surface yesterday's Final game.
     if (lastGameResult && lastGameResult.date === today) {
-      // Resend today's last known data rather than showing "No Game Today"
       console.log('0 games from API; reusing cached result for ' + today);
-      processGameData(lastGameResult.data);
+      processGameData(lastGameResult.data, lastGameResult.date);
     } else {
       console.log('No games found for ' + today + ' (team index ' + favoriteTeam + ', id ' + teamIds[favoriteTeam] + '); sending NO_GAME_TODAY');
       var dictionary = { 'TYPE':1, 'NUM_GAMES': 0 };
       sendDataToWatch(dictionary);
     }
   } else {
-    // Cache this successful result for today
-    lastGameResult = { date: today, data: gameData };
+    // Cache keyed by the request date, not the wall-clock time of the response.
+    lastGameResult = { date: requestDate || today, data: gameData };
     if (number_of_games == 1){
       compileDataForWatch(gameData, 0);
     } else {
@@ -360,19 +364,22 @@ function processGameData(gameData){
 // Function to get MLB data from the official MLB Stats API (https://statsapi.mlb.com)
 // No API key required. Replaces the private chs.network server.
 function getGameData(offset){
-  var teamId = teamIds[favoriteTeam];
-  if (!teamId) {
-    // All-Star teams or invalid index have no Stats API team ID
-    processGameData({ number_of_games: 0, game_data: [] });
-    return;
-  }
-
-  // Build the date string (YYYY-MM-DD) for today or yesterday (offset = -1)
+  // Build the date string (YYYY-MM-DD) first so it can be passed to every
+  // processGameData call as the authoritative cache key.  Using the request
+  // date (not the wall-clock time of the response) prevents a post-midnight
+  // response from being cached under tomorrow's date with yesterday's game.
   var d = new Date();
   d.setDate(d.getDate() + offset);
   var date = d.getFullYear() + '-' +
              ('0' + (d.getMonth() + 1)).slice(-2) + '-' +
              ('0' + d.getDate()).slice(-2);
+
+  var teamId = teamIds[favoriteTeam];
+  if (!teamId) {
+    // All-Star teams or invalid index have no Stats API team ID
+    processGameData({ number_of_games: 0, game_data: [] }, date);
+    return;
+  }
 
   var url = 'https://statsapi.mlb.com/api/v1/schedule' +
             '?sportId=1' +
@@ -389,7 +396,7 @@ function getGameData(offset){
         reload_timeout++;
         getGameData(offset);
       } else {
-        processGameData({ number_of_games: 0, game_data: [] });
+        processGameData({ number_of_games: 0, game_data: [] }, date);
       }
       return;
     }
@@ -402,7 +409,7 @@ function getGameData(offset){
         reload_timeout++;
         getGameData(offset);
       } else {
-        processGameData({ number_of_games: 0, game_data: [] });
+        processGameData({ number_of_games: 0, game_data: [] }, date);
       }
       return;
     }
@@ -430,7 +437,7 @@ function getGameData(offset){
       game_data = games.map(transformMLBGame);
     } catch(e) {
       console.log('transformMLBGame error: ' + e.message);
-      processGameData({ number_of_games: 0, game_data: [] });
+      processGameData({ number_of_games: 0, game_data: [] }, date);
       return;
     }
     var transformed = {
@@ -451,7 +458,7 @@ function getGameData(offset){
       offset = 0;
       getGameData(offset);
     } else {
-      processGameData(transformed);
+      processGameData(transformed, date);
     }
   };
 
@@ -461,7 +468,7 @@ function getGameData(offset){
       reload_timeout++;
       getGameData(offset);
     } else {
-      processGameData({ number_of_games: 0, game_data: [] });
+      processGameData({ number_of_games: 0, game_data: [] }, date);
     }
   };
 
@@ -471,7 +478,7 @@ function getGameData(offset){
       reload_timeout++;
       getGameData(offset);
     } else {
-      processGameData({ number_of_games: 0, game_data: [] });
+      processGameData({ number_of_games: 0, game_data: [] }, date);
     }
   };
 
