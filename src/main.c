@@ -162,6 +162,11 @@ int update_number = 0;
 // We require 3 consecutive Final responses before switching to the slow rate,
 // guarding against a transient Final from the API mid-game.
 static int final_confirm_count = 0;
+// Watchdog: counts minutes since the last successful data receipt from the phone.
+// If this exceeds WATCHDOG_LIMIT during an active game period, the AppMessage
+// channel is silently stuck and must be reset. Resets to 0 on any incoming message.
+static int ticks_since_last_data = 0;
+#define WATCHDOG_LIMIT 10
 int showing_loading_screen = 1;
 int showing_no_game = 0;
 	
@@ -265,17 +270,20 @@ static bool request_update(){
     return false;
   }
   dict_write_uint32(iter, TYPE, 1);
-  app_message_outbox_send();
+  if (app_message_outbox_send() != APP_MSG_OK) {
+    schedule_retry();
+    return false;
+  }
   return true;
 }
 
 static void request_color_update(){
   DictionaryIterator *iter;
   if (app_message_outbox_begin(&iter) != APP_MSG_OK || iter == NULL) {
-    return;
+    return;  // Settings will arrive proactively from JS 'ready'; no retry needed.
   }
   dict_write_uint32(iter, TYPE, 2);
-  app_message_outbox_send();
+  app_message_outbox_send();  // Failure is acceptable; JS 'ready' covers this path.
 }
 
 
@@ -546,6 +554,8 @@ static void route_graphic_updates(){
 
 // Called when a message is received from PebbleKitJS
 static void in_received_handler(DictionaryIterator *received, void *context) {
+  // Any message from the phone proves the channel is alive — reset watchdog.
+  ticks_since_last_data = 0;
   // Does this message contain a change in type
   Tuple *type_tuple = dict_find(received, TYPE);
   int type = 1;
@@ -609,7 +619,12 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
     }
     // Update the colors
     change_colors();
-    
+    // Phone is responsive — pull fresh game data immediately rather than
+    // waiting up to refresh_time_off minutes for the tick counter to expire.
+    // This covers BT reconnects and app restarts where the JS 'ready' push
+    // may not fire again.
+    request_update();
+
   } else {
     
     Tuple *type_tuple = dict_find(received, NUM_GAMES);
@@ -1175,7 +1190,54 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // After receiving Final (status 3), stay on the fast refresh rate until
   // final_confirm_count reaches 3 consecutive confirmations. This prevents a
   // transient API 'Final' mid-game from locking the watch into the slow rate.
-  int use_fast_rate = (currentGameData.status == 2) || (currentGameData.status == 3 && final_confirm_count < 3);
+  //
+  // Also use fast rate when the current time is within the expected game window
+  // (30 min before scheduled start through 5 hours after), even if the watch
+  // still reports Pre-Game status. This prevents the 60-minute slow-poll gap
+  // that occurs when the game starts between two scheduled polls.
+  // game_time is stored as "H:MM" in 12-hour format with no AM/PM marker.
+  // Only evaluated during PM hours (tm_hour >= 12) to avoid 6 AM falsely
+  // matching a 6 PM game time.
+  int use_game_time_fast_rate = 0;
+  if ((currentGameData.status == 0 || currentGameData.status == 1) &&
+      tick_time->tm_hour >= 12 &&
+      currentGameData.game_time[0] >= '1' && currentGameData.game_time[0] <= '9') {
+    int game_hour = atoi(currentGameData.game_time);
+    char *colon = strchr(currentGameData.game_time, ':');
+    int game_min = colon ? atoi(colon + 1) : 0;
+    // Express everything as minutes past noon so arithmetic stays positive.
+    // tm_hour is 24h; for PM hours (>=12) subtract 12 to get hours-past-noon.
+    int cur_pm_min = (tick_time->tm_hour - 12) * 60 + tick_time->tm_min;
+    // game_hour==12 means noon (0 hours past noon); 1-11 means 1-11 PM.
+    int game_pm_hour = (game_hour == 12) ? 0 : game_hour;
+    int game_pm_min  = game_pm_hour * 60 + game_min;
+    int diff = cur_pm_min - game_pm_min;  // negative = before start, positive = after
+    if (diff >= -30 && diff <= 300) {     // 30 min before through 5 hours after start
+      use_game_time_fast_rate = 1;
+    }
+  }
+
+  int use_fast_rate = (currentGameData.status == 2) ||
+                      (currentGameData.status == 3 && final_confirm_count < 3) ||
+                      use_game_time_fast_rate;
+
+  // Watchdog: count ticks since last successful data receipt. If no response
+  // has arrived in WATCHDOG_LIMIT minutes during an active game period, the
+  // channel is silently stuck. Re-open AppMessage to reset it — same effect
+  // as exiting and re-entering the watchface — then force a fresh request.
+  ticks_since_last_data++;
+  if (use_fast_rate && ticks_since_last_data >= WATCHDOG_LIMIT) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Watchdog: no data in %d min, resetting AppMessage channel.", ticks_since_last_data);
+    ticks_since_last_data = 0;
+    update_number = 0;
+    #ifdef PBL_COLOR
+      app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+    #else
+      app_message_open(300, 50);
+    #endif
+    request_update();
+  }
+
   if (use_fast_rate){
     int threshold = userSettings.refresh_time_on / 60;
     if (threshold < 1) { threshold = 1; }

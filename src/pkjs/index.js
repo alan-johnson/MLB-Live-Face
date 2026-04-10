@@ -74,9 +74,29 @@ function parseScore(raw_score){
   return score;
 }
 
+// Retry state for sendDataToWatch — limit retries to avoid infinite loops.
+var s_send_retries = 0;
+var MAX_SEND_RETRIES = 3;
+
 // Function to send a message to the Pebble using AppMessage API
 function sendDataToWatch(data){
-	Pebble.sendAppMessage(data);
+  s_send_retries = 0;
+  function trySend() {
+    Pebble.sendAppMessage(data,
+      function() { s_send_retries = 0; }, // success — nothing to do
+      function(e) {
+        console.log('sendAppMessage failed (attempt ' + (s_send_retries + 1) + '): ' + JSON.stringify(e));
+        if (s_send_retries < MAX_SEND_RETRIES) {
+          s_send_retries++;
+          setTimeout(trySend, 1000);
+        } else {
+          console.log('sendAppMessage gave up after ' + MAX_SEND_RETRIES + ' retries.');
+          s_send_retries = 0;
+        }
+      }
+    );
+  }
+  trySend();
 }
 
 // Convert an ISO 8601 UTC game time to local 12-hour "H:MM" format (no leading zero)
@@ -577,6 +597,10 @@ Pebble.addEventListener("ready", function(e) {
 
 // Called when incoming message from the Pebble is received
 Pebble.addEventListener("appmessage", function(e) {
+  if (!e || !e.payload) {
+    console.log('appmessage: empty or missing payload, ignoring.');
+    return;
+  }
   var type = parseInt(e.payload.TYPE);
   if(type == 1){
     newGameDataRequest();

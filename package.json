@@ -46,6 +46,12 @@
         "resources": {
             "media": [
                 {
+                    "type": "png",
+                    "menuIcon": true,
+                    "name": "IMAGE_MENU_ICON",
+                    "file": "images/mlb-menu-icon.png"
+                },
+                {
                     "file": "images/nl.png",
                     "name": "NL",
                     "targetPlatforms": [
