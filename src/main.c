@@ -424,6 +424,26 @@ static void showNoGame(){
     showing_no_game = 1;
   }
 }
+// On BW watches some logos have a white background in the time display area.
+// Team indices with confirmed white backgrounds (>50% white pixels in time region):
+//   26 = KC (Royals), 29 = CWS (White Sox)
+// For those teams use black text so it reads against the white logo; white otherwise.
+static void apply_time_text_color() {
+  #ifdef PBL_COLOR
+    text_layer_set_text_color(s_time_layer, userSettings.secondary_color);
+  #else
+    static const int white_bg_teams[] = { 26, 29 };
+    GColor c = GColorWhite;
+    for (int i = 0; i < (int)(sizeof(white_bg_teams) / sizeof(white_bg_teams[0])); i++) {
+      if (userSettings.favorite_team == white_bg_teams[i]) {
+        c = GColorBlack;
+        break;
+      }
+    }
+    text_layer_set_text_color(s_time_layer, c);
+  #endif
+}
+
 static void change_colors(){
   color_update = 1;
   // Set Primary Color
@@ -437,7 +457,7 @@ static void change_colors(){
   update_bso();
   update_inning_state();
   // Set Secondary Color
-  text_layer_set_text_color(s_time_layer, userSettings.secondary_color);
+  apply_time_text_color();
   update_bases();
   // Set Background Color
   window_set_background_color(window, userSettings.background_color);
@@ -1042,12 +1062,8 @@ static void window_load(Window *window) {
   layer_set_update_proc(s_bases_layer, bases_update_proc);
   
   // Improve the layout to be more like a watchface
-  text_layer_set_text_color(s_time_layer, userSettings.secondary_color);
-  #ifdef PBL_COLOR
-    text_layer_set_background_color(s_time_layer, GColorClear);
-  #else
-    text_layer_set_background_color(s_time_layer, GColorBlack);
-  #endif
+  apply_time_text_color();
+  text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text(s_time_layer, "00:00");
   text_layer_set_font(s_time_layer, s_font_mlb_40);
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
