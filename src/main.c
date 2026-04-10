@@ -638,18 +638,6 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
       // Show No Game Today
       showNoGame();
     } else {
-      // Hide the Loading Screen
-      if(showing_loading_screen == 1){
-        hide_loading_screen();
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Hiding Loading Screen.");
-      }
-      // Hide the No Game Message
-      if(showing_no_game == 1){
-        showing_no_game = 0;
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Hiding No Game Message.");
-
-      }
-      
       // Reset the refresh counter so the next update fires at the correct
       // interval from *this* received update, not from the last sent request.
       // Without this, a brief status change (e.g. transient showNoGame) would
@@ -754,6 +742,16 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
         if (final_confirm_count < 3) { final_confirm_count++; }
       } else {
         final_confirm_count = 0;
+      }
+
+      // Data is fully loaded — hide loading/no-game overlays before updating display
+      if(showing_loading_screen == 1){
+        hide_loading_screen();
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Hiding Loading Screen.");
+      }
+      if(showing_no_game == 1){
+        showing_no_game = 0;
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Hiding No Game Message.");
       }
 
       // After processing data, route graphic updates
