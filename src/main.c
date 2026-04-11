@@ -169,6 +169,7 @@ static int ticks_since_last_data = 0;
 #define WATCHDOG_LIMIT 10
 int showing_loading_screen = 1;
 int showing_no_game = 0;
+static int bt_connected = 1;
 	
 // Key values for AppMessage Dictionary
 enum {
@@ -787,7 +788,7 @@ static void out_failed_handler(DictionaryIterator *failed, AppMessageResult reas
 
 // Graphics Drawing Functions
 static void bso_update_proc(Layer *layer, GContext *ctx) {
-  if (currentGameData.status == 2){
+  if (currentGameData.status == 2 && bt_connected) {
     GRect bounds = layer_get_bounds(layer);
     #ifdef PBL_RECT 
       if(userSettings.bases_display == 1) {
@@ -836,7 +837,7 @@ static void bso_update_proc(Layer *layer, GContext *ctx) {
   }
 }
 static void inning_state_update_proc(Layer *layer, GContext *ctx) {
-  if (currentGameData.status == 2){
+  if (currentGameData.status == 2 && bt_connected) {
     GRect bounds = layer_get_bounds(layer);
     #ifdef PBL_RECT 
       if(userSettings.bases_display == 1) {
@@ -913,7 +914,7 @@ static void bases_legacy_helper(Layer *layer, GContext *ctx, GPath *path, int fi
 #endif
 
 static void bases_update_proc(Layer *layer, GContext *ctx) {
-  if (currentGameData.status == 2){
+  if (currentGameData.status == 2 && bt_connected) {
     GRect bounds = layer_get_bounds(layer);
     #ifdef PBL_RECT 
       if(userSettings.bases_display == 1) {
@@ -1270,6 +1271,35 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
   
 }
 
+static void bluetooth_callback(bool connected) {
+  bt_connected = connected ? 1 : 0;
+  if (!connected) {
+    sliding_text_layer_set_text_alignment(s_away_data_layer, GTextAlignmentLeft);
+    sliding_text_layer_set_next_text(s_away_data_layer, "BT LOST");
+    sliding_text_layer_animate_up(s_away_data_layer);
+    rotate_clear(s_home_data_layer, 0);
+    rotate_clear(s_inning_layer, 0);
+    rotate_clear(s_game_time_layer, 0);
+    update_bso();
+    update_inning_state();
+    update_bases();
+  } else {
+    if (!showing_loading_screen) {
+      if (currentGameData.status == 2) {
+        startGame();
+      } else if (currentGameData.status == 3) {
+        endGame();
+      } else {
+        newGame();
+      }
+    } else {
+      rotate_clear(s_away_data_layer, 1);
+    }
+    update_number = 0;
+    request_update();
+  }
+}
+
 void init(void) {
   // Populate the initial settings for loading
   initialize_settings();
@@ -1289,6 +1319,10 @@ void init(void) {
   // The broadcast-revert countdown uses a one-shot AppTimer instead.
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   accel_tap_service_subscribe(accel_tap_handler);
+  bluetooth_connection_service_subscribe(bluetooth_callback);
+  if (!bluetooth_connection_service_peek()) {
+    bluetooth_callback(false);
+  }
   
     // Register AppMessage handlers
     app_message_register_inbox_received(in_received_handler); 
@@ -1308,6 +1342,7 @@ void init(void) {
 void deinit(void) {
 	app_message_deregister_callbacks();
   accel_tap_service_unsubscribe();
+  bluetooth_connection_service_unsubscribe();
 	window_destroy(window);
 }
 
