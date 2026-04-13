@@ -435,13 +435,13 @@ static void showNoGame(){
 }
 // On BW watches some logos have a white background in the time display area.
 // Team indices with confirmed white backgrounds (>50% white pixels in time region):
-//   26 = KC (Royals), 29 = CWS (White Sox)
+//   7 = STL (Cardinals), 26 = KC (Royals), 29 = CWS (White Sox)
 // For those teams use black text so it reads against the white logo; white otherwise.
 static void apply_time_text_color() {
   #ifdef PBL_COLOR
     text_layer_set_text_color(s_time_layer, userSettings.secondary_color);
   #else
-    static const int white_bg_teams[] = { 26, 29 };
+    static const int white_bg_teams[] = { 7, 26, 29 };
     GColor c = GColorWhite;
     for (int i = 0; i < (int)(sizeof(white_bg_teams) / sizeof(white_bg_teams[0])); i++) {
       if (userSettings.favorite_team == white_bg_teams[i]) {

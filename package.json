@@ -457,13 +457,20 @@
                     "type": "png"
                 },
                 {
-                    "file": "images/min.png",
+                    "file": "images/aplite/min.png",
                     "name": "TWINS",
                     "targetPlatforms": [
                         "aplite",
-                        "basalt",
-                        "chalk",
                         "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/min.png",
+                    "name": "TWINS",
+                    "targetPlatforms": [
+                        "basalt",
+                        "chalk"
                     ],
                     "type": "png"
                 },
