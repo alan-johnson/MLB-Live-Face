@@ -266,68 +266,33 @@ function compileDataForWatch(raw_data, game){
   }
 }
 
-function within_30_minutes(game_time){
-  var game_hours = parseInt(game_time.split(":")[0]);
-  var game_minutes = parseInt(game_time.split(":")[1]);
-  var now = new Date();
-  var hours = now.getHours();
-  if (hours > 12) {
-    hours = hours - 12;
-  }
-  var minutes = now.getMinutes();
-  if (game_hours > hours + 1){
-    return false;
-  } else if (game_hours > hours) {
-    if ((60 + game_minutes) - minutes > 30){
-      return false;
-    } else {
-      return true;
-    }
-  } else if (game_hours == hours){
-    if (game_minutes > minutes + 30){
-      return false;
-    } else {
-      return true;
-    }
-  } else {
-    return true;
-  }
+// Assign a display priority to a game status.
+// Higher value = more relevant to show right now.
+//   3: actively in progress
+//   2: imminent (Warmup / Pre-Game — API transitions here ~30 min before first pitch)
+//   1: scheduled but not yet soon (Preview)
+//   0: completed or not happening (Final / Postponed / Cancelled)
+function gameStatusPriority(status) {
+  if (status === 'In Progress') { return 3; }
+  if (status === 'Warmup' || status === 'Pre-Game') { return 2; }
+  if (status === 'Preview') { return 1; }
+  return 0;  // Final, Postponed, Cancelled, unknown
 }
 
 function chooseGame(data){
-  // Initial variable set
-  var game = 0;
+  var s1 = data.game_data[0].game_status;
+  var s2 = data.game_data[1].game_status;
+  var p1 = gameStatusPriority(s1);
+  var p2 = gameStatusPriority(s2);
 
-  // Get game information
-  var game_1_status = data.game_data[0].game_status;
-  var game_2_status = data.game_data[1].game_status;
-  var game_2_time = data.game_data[1].game_time;
-
-  // Determine which game to use
-  if (game_1_status == 'Preview' || game_1_status == 'Warmup' || game_1_status == 'In Progress' || game_1_status == 'Pre-Game'){
-    // If first game has not started yet or is in progress, use first game
-    game = 0;
-  } else if (game_1_status == 'Final' && within_30_minutes(game_2_time) === false){
-    // If first game has ended and next game is more than 30 minutes away, show first game
-    game = 0;
-  } else if (game_1_status == 'Final' && within_30_minutes(game_2_time) === true){
-    // If first game is over and next game is less than 30 minutes away or any other status, show second game
-    game = 1;
-  }  else if (game_2_status == 'In Progress'){
-    // Game 2 in progress fallback
-    game = 1;
-  } else {
-    // Fallback
-    game = 1;
-  }
-
-  // Catch, if offset is -1 then show second game
-  if (game_2_status == 'Final'){
-    // Game 2 final fallback
-    game = 1;
-  }
-
-  return game;
+  // Game with the higher priority wins.
+  // Ties: game 2 wins when both are Final (most recent result);
+  //       game 1 wins when both are Preview (sooner start) or both are equal active states.
+  if (p2 > p1) { return 1; }
+  if (p1 > p2) { return 0; }
+  // Equal priority — both Final or both the same pre-game state
+  if (p1 === 0) { return 1; }  // both done: show game 2 (most recent)
+  return 0;                    // both Preview or both active: show game 1 (sooner)
 }
 
 // Function to process the incoming data.
