@@ -810,8 +810,8 @@ static void bso_update_proc(Layer *layer, GContext *ctx) {
       }
     #else
       if(currentGameData.outs == 2){
-        graphics_fill_circle(ctx, GPoint(((bounds.size.w) / 20) * 19, ((bounds.size.h / 4) * 3 + 23)), 6);
-        graphics_fill_circle(ctx, GPoint(((bounds.size.w) / 20) * 19, ((bounds.size.h / 4) * 3 + 1)), 6);
+        graphics_fill_circle(ctx, GPoint(((bounds.size.w) / 20) * 19, ((bounds.size.h / 4) * 3 + 21)), 6);
+        graphics_fill_circle(ctx, GPoint(((bounds.size.w) / 20) * 19, ((bounds.size.h / 4) * 3 + 3)), 6);
       } else if(currentGameData.outs > 0) {
         graphics_fill_circle(ctx, GPoint(((bounds.size.w) / 20) * 19, (((bounds.size.h / 4) * 3 + 12))), 6);
         if ((strcmp(currentGameData.inning_half, "Middle") == 0) || (strcmp(currentGameData.inning_half, "End") == 0)){
