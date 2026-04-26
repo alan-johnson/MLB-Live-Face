@@ -545,13 +545,20 @@
                     "type": "png"
                 },
                 {
-                    "file": "images/lad.png",
+                    "file": "images/aplite/lad.png",
                     "name": "DODGERS",
                     "targetPlatforms": [
                         "aplite",
-                        "basalt",
-                        "chalk",
                         "diorite"
+                    ],
+                    "type": "png"
+                },
+                {
+                    "file": "images/lad.png",
+                    "name": "DODGERS",
+                    "targetPlatforms": [
+                        "basalt",
+                        "chalk"
                     ],
                     "type": "png"
                 },
