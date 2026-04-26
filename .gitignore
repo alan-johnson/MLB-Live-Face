@@ -6,7 +6,12 @@ pebble-screenshot*
 
 .idea
 
-_DS_Store
+.DS_Store
 Thumbs.db
+
+AI related files
+*.log
+.claude
+CLAUDE.*
 
 *.bak
