@@ -1050,10 +1050,10 @@ static void window_load(Window *window) {
   #elif PBL_PLATFORM_EMERY
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Using Time 2.0 Layout");
     s_away_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 7) + 2, 50, 25));
-    s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 8) + 10, 50, 25));
+    s_home_team_layer = sliding_text_layer_create(GRect((bounds.size.w / 15), ((bounds.size.h / 10) * 8) + 14, 50, 25));
     s_game_time_layer = sliding_text_layer_create(GRect(((bounds.size.w / 5) * 4) - 4, ((bounds.size.h / 10) * 7) + 11, 50, 25));
     s_away_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 7) + 2, ((bounds.size.w / 5) * 4) - 0, 30));
-    s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 8) + 10, ((bounds.size.w / 5) * 4) - 0, 30));
+    s_home_data_layer = sliding_text_layer_create(GRect(((bounds.size.w / 15) * 2) + 30, ((bounds.size.h / 10) * 8) + 14, ((bounds.size.w / 5) * 4) - 0, 30));
     s_inning_layer = sliding_text_layer_create(GRect(((bounds.size.w / 4) * 3), ((bounds.size.h / 10) * 7) + 14, ((bounds.size.w / 5) * 3) - 5, 45));
     s_loading_layer = sliding_text_layer_create(GRect(0, ((bounds.size.h / 10) * 7) + 14, bounds.size.w, 45));
   #else
